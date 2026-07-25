@@ -41,9 +41,12 @@ without an account.
 
 | Feature | How to get there |
 |---------|------------------|
-| Price Watch | Sign-in screen, tap **See today's prices** |
-| Impact map | Sign-in screen, tap **View the impact map** |
-| Register | Sign-in screen, tap **Create an account** (pick Citizen or Merchant) |
+| Price Watch | Sign-in screen, **No account needed** > **Price Watch** |
+| Impact map | Sign-in screen, **No account needed** > **Impact map** |
+| Register | Sign-in screen, **Create an account** (pick Citizen or Merchant) |
+
+A merchant who registers picks their store from the list on that screen, then waits for
+an LGU to approve it.
 
 ## Citizen
 
