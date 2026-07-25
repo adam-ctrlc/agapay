@@ -5,7 +5,7 @@ import { Basket, Storefront } from "phosphor-react-native";
 
 import { ApiError } from "@/lib/api/client";
 import type { RegisterPayload, UserRole } from "@/lib/api/auth";
-import { useLocations } from "@/lib/queries/locations";
+import { useSignupLocations } from "@/lib/queries/locations";
 import { useAuth } from "@/lib/auth/context";
 import { cn } from "@/lib/utils";
 import { PH_COLORS } from "@/lib/theme";
@@ -67,7 +67,7 @@ export default function Register() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
 
-  const locations = useLocations({}, role === "merchant");
+  const locations = useSignupLocations(role === "merchant");
 
   function fieldError(key: string) {
     return fieldErrors[key]?.[0];

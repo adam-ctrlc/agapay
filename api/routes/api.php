@@ -48,6 +48,8 @@ Route::middleware('cache.edge:300')->group(function (): void {
 
     Route::get('guides', [ServiceGuideController::class, 'index']);
     Route::get('guides/{guide}', [ServiceGuideController::class, 'show']);
+
+    Route::get('signup/locations', [LocationController::class, 'forSignup']);
 });
 
 Route::middleware('cache.edge:60')->group(function (): void {

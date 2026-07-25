@@ -92,3 +92,22 @@ export async function restockLocation(
   });
   return res.data;
 }
+
+export type SignupLocation = {
+  id: number;
+  name: string;
+  type: LocationType;
+  barangay: string | null;
+};
+
+/**
+ * Slim, unauthenticated list used by the register screen, where the merchant
+ * has no token yet.
+ */
+export async function listSignupLocations(signal?: AbortSignal) {
+  const res = await apiRequest<{ data: SignupLocation[] }>("/signup/locations", {
+    auth: false,
+    signal,
+  });
+  return res.data;
+}

@@ -42,6 +42,31 @@ final class LocationController extends Controller
         return LocationResource::collection($locations);
     }
 
+    /**
+     * Public on purpose: a merchant picks their store while registering, so
+     * they have no token yet. Deliberately slim, since stock levels and power
+     * status are none of an unauthenticated caller's business.
+     *
+     * @return array<string, mixed>
+     */
+    public function forSignup(): array
+    {
+        $locations = Location::query()
+            ->where('is_active', true)
+            ->with('barangay:id,name')
+            ->orderBy('name')
+            ->get(['id', 'name', 'type', 'barangay_id']);
+
+        return [
+            'data' => $locations->map(fn (Location $location) => [
+                'id' => $location->id,
+                'name' => $location->name,
+                'type' => $location->type->value,
+                'barangay' => $location->barangay?->name,
+            ])->all(),
+        ];
+    }
+
     public function show(Location $location): LocationResource
     {
         $this->energyImpact->syncPowerStatus();
