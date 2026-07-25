@@ -18,7 +18,9 @@ redemption, with offline resilience for brownouts.
 
 ## Demo accounts
 
-Every account uses the password `password`. Sign in with the email or the username.
+Passwords are **not** published here. This repository is public and the demo API is
+live, so credentials are shared privately instead. Ask the maintainer, or seed your
+own database locally with `php artisan migrate:fresh --seed`.
 
 | Email | Username | Role | Use it to see |
 |-------|----------|------|---------------|
@@ -28,7 +30,8 @@ Every account uses the password `password`. Sign in with the email or the userna
 | `pending@ayudalock.test` | `nena` | Merchant | The "waiting for LGU approval" screen |
 | `mayor@ayudalock.test` | `mayor` | LGU admin | Dashboard, triage, approvals, publishing |
 
-Seed data keeps the old `ayudalock.test` domain on purpose, so existing logins keep working.
+Seed data keeps the `ayudalock.test` domain on purpose, so existing logins keep working
+after the rename. It is a reserved test domain, not a real mailbox.
 
 ---
 

@@ -15,6 +15,13 @@ final class UserSeeder extends Seeder
 {
     public function run(): void
     {
+        /**
+         * Never a published constant. The repo is public and the demo API is
+         * live, so a fixed seeded password is a real account takeover, not a
+         * convenience. Local seeding still defaults to something typeable.
+         */
+        $password = Hash::make(env('DEMO_PASSWORD') ?: 'password');
+
         $kadiwa = Location::query()->where('type', LocationType::KadiwaStore->value)->first();
         $station = Location::query()->where('type', LocationType::GasStation->value)->first();
 
@@ -26,7 +33,7 @@ final class UserSeeder extends Seeder
                 'middle_name' => 'Reyes',
                 'last_name' => 'Santos',
                 'username' => 'maria',
-                'password' => Hash::make('password'),
+                'password' => $password,
                 'role' => UserRole::Citizen->value,
                 'phone' => '09170000001',
             ],
@@ -40,7 +47,7 @@ final class UserSeeder extends Seeder
                 'middle_name' => 'Ramos',
                 'last_name' => 'Dela Cruz',
                 'username' => 'jose',
-                'password' => Hash::make('password'),
+                'password' => $password,
                 'role' => UserRole::Citizen->value,
                 'phone' => '09170000002',
             ],
@@ -53,7 +60,7 @@ final class UserSeeder extends Seeder
                 'first_name' => 'Kadiwa',
                 'last_name' => 'Vendor',
                 'username' => 'kadiwa',
-                'password' => Hash::make('password'),
+                'password' => $password,
                 'role' => UserRole::Merchant->value,
                 'phone' => '09170000003',
                 'location_id' => $kadiwa?->id,
@@ -72,7 +79,7 @@ final class UserSeeder extends Seeder
                 'first_name' => 'Nena',
                 'last_name' => 'Bautista',
                 'username' => 'nena',
-                'password' => Hash::make('password'),
+                'password' => $password,
                 'role' => UserRole::Merchant->value,
                 'phone' => '09170000005',
                 'location_id' => $station?->id,
@@ -87,7 +94,7 @@ final class UserSeeder extends Seeder
                 'first_name' => 'Andres',
                 'last_name' => 'Bonifacio',
                 'username' => 'mayor',
-                'password' => Hash::make('password'),
+                'password' => $password,
                 'role' => UserRole::LguAdmin->value,
                 'phone' => '09170000004',
             ],

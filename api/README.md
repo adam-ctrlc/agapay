@@ -44,7 +44,11 @@ Key env vars (see `.env.example`): `DB_*`, `JWT_SECRET`, `JWT_TTL`, `AUTH_GUARD=
 `VOUCHER_TTL_MINUTES`, and (optional, for serverless) `VOUCHER_PRIVATE_KEY` and
 `VOUCHER_PUBLIC_KEY`.
 
-## Demo accounts (password: `password`)
+## Demo accounts
+
+Passwords are not published here; this repo is public and the demo API is live.
+Seeding locally creates these accounts with a password you control via
+`DEMO_PASSWORD` (defaults to `password` for local development only).
 
 | Email | Role | Notes |
 |-------|------|-------|
