@@ -26,7 +26,7 @@ final class UserSeeder extends Seeder
         $station = Location::query()->where('type', LocationType::GasStation->value)->first();
 
         User::query()->firstOrCreate(
-            ['email' => 'citizen@ayudalock.test'],
+            ['email' => 'citizen@agapay.test'],
             [
                 'name' => 'Maria Santos',
                 'first_name' => 'Maria',
@@ -40,7 +40,7 @@ final class UserSeeder extends Seeder
         );
 
         User::query()->firstOrCreate(
-            ['email' => 'driver@ayudalock.test'],
+            ['email' => 'driver@agapay.test'],
             [
                 'name' => 'Jose Dela Cruz',
                 'first_name' => 'Jose',
@@ -54,7 +54,7 @@ final class UserSeeder extends Seeder
         );
 
         User::query()->firstOrCreate(
-            ['email' => 'merchant@ayudalock.test'],
+            ['email' => 'merchant@agapay.test'],
             [
                 'name' => 'Kadiwa Vendor',
                 'first_name' => 'Kadiwa',
@@ -73,7 +73,7 @@ final class UserSeeder extends Seeder
          * real to act on straight after seeding.
          */
         User::query()->firstOrCreate(
-            ['email' => 'pending@ayudalock.test'],
+            ['email' => 'pending@agapay.test'],
             [
                 'name' => 'Nena Bautista',
                 'first_name' => 'Nena',
@@ -88,7 +88,7 @@ final class UserSeeder extends Seeder
         );
 
         User::query()->firstOrCreate(
-            ['email' => 'mayor@ayudalock.test'],
+            ['email' => 'mayor@agapay.test'],
             [
                 'name' => 'City DRRMO Admin',
                 'first_name' => 'Andres',

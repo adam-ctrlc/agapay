@@ -12,7 +12,7 @@ final class BeneficiarySeeder extends Seeder
 {
     public function run(): void
     {
-        $citizen = User::query()->where('email', 'citizen@ayudalock.test')->first();
+        $citizen = User::query()->where('email', 'citizen@agapay.test')->first();
 
         Beneficiary::query()->updateOrCreate(
             ['dswd_id' => 'DSWD-000001'],

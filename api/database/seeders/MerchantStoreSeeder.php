@@ -24,7 +24,7 @@ final class MerchantStoreSeeder extends Seeder
     public function run(): void
     {
         $merchant = User::query()
-            ->where('email', 'merchant@ayudalock.test')
+            ->where('email', 'merchant@agapay.test')
             ->whereNotNull('location_id')
             ->first();
 

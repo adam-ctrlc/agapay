@@ -13,8 +13,8 @@ final class AnnouncementSeeder extends Seeder
 {
     public function run(): void
     {
-        $mayor = User::query()->where('email', 'mayor@ayudalock.test')->first();
-        $merchant = User::query()->where('email', 'merchant@ayudalock.test')->first();
+        $mayor = User::query()->where('email', 'mayor@agapay.test')->first();
+        $merchant = User::query()->where('email', 'merchant@agapay.test')->first();
 
         $samples = [
             [

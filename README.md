@@ -24,14 +24,13 @@ own database locally with `php artisan migrate:fresh --seed`.
 
 | Email | Username | Role | Use it to see |
 |-------|----------|------|---------------|
-| `citizen@ayudalock.test` | `maria` | Citizen | Food eligibility, claiming, reporting |
-| `driver@ayudalock.test` | `jose` | Citizen | Fuel subsidy eligibility |
-| `merchant@ayudalock.test` | `kadiwa` | Merchant | Redeeming, approved store |
-| `pending@ayudalock.test` | `nena` | Merchant | The "waiting for LGU approval" screen |
-| `mayor@ayudalock.test` | `mayor` | LGU admin | Dashboard, triage, approvals, publishing |
+| `citizen@agapay.test` | `maria` | Citizen | Food eligibility, claiming, reporting |
+| `driver@agapay.test` | `jose` | Citizen | Fuel subsidy eligibility |
+| `merchant@agapay.test` | `kadiwa` | Merchant | Redeeming, approved store |
+| `pending@agapay.test` | `nena` | Merchant | The "waiting for LGU approval" screen |
+| `mayor@agapay.test` | `mayor` | LGU admin | Dashboard, triage, approvals, publishing |
 
-Seed data keeps the `ayudalock.test` domain on purpose, so existing logins keep working
-after the rename. It is a reserved test domain, not a real mailbox.
+`agapay.test` is a reserved test domain, not a real mailbox.
 
 ---
 
@@ -120,7 +119,7 @@ Five tabs: **Redeem, Offline, Impact, Alerts, Account**.
 
 A newly registered merchant lands on a **Waiting for LGU approval** screen instead of the
 tabs, showing account created > store assigned > LGU approval. Sign in as
-`pending@ayudalock.test` to see it. Redeeming is blocked on the server too, not just hidden.
+`pending@agapay.test` to see it. Redeeming is blocked on the server too, not just hidden.
 
 ### Redeem tab
 | Feature | How to get there |

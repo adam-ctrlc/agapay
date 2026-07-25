@@ -52,10 +52,10 @@ Seeding locally creates these accounts with a password you control via
 
 | Email | Role | Notes |
 |-------|------|-------|
-| `citizen@ayudalock.test` | citizen | Maria Santos, food-eligible (`PSN-0001-0001-0001`) |
-| `driver@ayudalock.test` | citizen | Jose Dela Cruz, fuel-eligible (`PSN-0002-0002-0002`, plate `NGP-1234`) |
-| `merchant@ayudalock.test` | merchant | Kadiwa vendor, bound to a Kadiwa store |
-| `mayor@ayudalock.test` | lgu_admin | City DRRMO / dashboard + price management |
+| `citizen@agapay.test` | citizen | Maria Santos, food-eligible (`PSN-0001-0001-0001`) |
+| `driver@agapay.test` | citizen | Jose Dela Cruz, fuel-eligible (`PSN-0002-0002-0002`, plate `NGP-1234`) |
+| `merchant@agapay.test` | merchant | Kadiwa vendor, bound to a Kadiwa store |
+| `mayor@agapay.test` | lgu_admin | City DRRMO / dashboard + price management |
 
 ## API
 

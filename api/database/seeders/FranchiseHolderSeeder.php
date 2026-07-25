@@ -12,7 +12,7 @@ final class FranchiseHolderSeeder extends Seeder
 {
     public function run(): void
     {
-        $driver = User::query()->where('email', 'driver@ayudalock.test')->first();
+        $driver = User::query()->where('email', 'driver@agapay.test')->first();
 
         /**
          * Three franchises for one driver: the duplicate-claim guard has to
