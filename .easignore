@@ -2,7 +2,9 @@
 # so everything .gitignore covers has to be repeated here.
 
 # The Laravel API ships to Vercel, not into the mobile build.
-api/
+# Leading slash matters: a bare "api/" also matches app/src/lib/api and
+# silently drops it from the upload.
+/api/
 
 # dependencies
 node_modules/
