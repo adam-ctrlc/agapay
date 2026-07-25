@@ -8,8 +8,8 @@ digitizing verification, allocation, and redemption.
 
 ## How it works (4 phases)
 
-1. **Verify & target:** cross-reference a citizen's PhilSys ID against the poverty
-   database (mock Listahanan) or the PUV franchise list (mock LTFRB).
+1. **Verify & target:** match the signed-in citizen against the household list (mock
+   Listahanan) or the PUV franchise list (mock LTFRB).
 2. **Dynamic allocation (the "lock"):** atomically reserve inventory and issue a
    time-sensitive voucher (RSA-signed token, QR payload, and 6-digit SMS code).
 3. **Redemption:** a merchant scans the token or SMS code; the ledger updates instantly.
@@ -52,8 +52,8 @@ Seeding locally creates these accounts with a password you control via
 
 | Email | Role | Notes |
 |-------|------|-------|
-| `citizen@agapay.test` | citizen | Maria Santos, food-eligible (`PSN-0001-0001-0001`) |
-| `driver@agapay.test` | citizen | Jose Dela Cruz, fuel-eligible (`PSN-0002-0002-0002`, plate `NGP-1234`) |
+| `citizen@agapay.test` | citizen | Maria Santos, on the household list, food-eligible |
+| `driver@agapay.test` | citizen | Jose Dela Cruz, PUV franchise holder (plate `NGP-1234`), fuel-eligible |
 | `merchant@agapay.test` | merchant | Kadiwa vendor, bound to a Kadiwa store |
 | `mayor@agapay.test` | lgu_admin | City DRRMO / dashboard + price management |
 
@@ -62,7 +62,7 @@ Seeding locally creates these accounts with a password you control via
 All protected routes use `Authorization: Bearer <jwt>`. Role gating via `role:` middleware.
 
 ### Auth
-- `POST /api/auth/register`: name, email, password, password_confirmation, role, optional phil_sys_id / location_id (required for merchant)
+- `POST /api/auth/register`: name, email, password, password_confirmation, role, optional phone / barangay_id, plus location_id (required for merchant)
 - `POST /api/auth/login`: returns `{ token, token_type, expires_in, user }`
 - `GET  /api/auth/me`, `POST /api/auth/refresh`, `POST /api/auth/logout`
 

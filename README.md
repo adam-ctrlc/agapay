@@ -8,13 +8,33 @@ redemption, with offline resilience for brownouts.
 
 ## How it works (4 phases)
 
-1. **Verify and target:** cross-reference a citizen's PhilSys ID against the poverty
-   database (mock Listahanan) or the PUV franchise list (mock LTFRB).
+1. **Verify and target:** match the signed-in citizen against the household list
+   (mock Listahanan) or the PUV franchise list (mock LTFRB). Being on a list is what
+   makes someone eligible, so nobody self-declares their way into a program.
 2. **Dynamic allocation (the "lock"):** atomically reserve inventory and issue a
    time-sensitive voucher (RSA-signed token, QR payload, and 6-digit SMS code).
 3. **Redemption:** a merchant scans the token or SMS code; the ledger updates instantly.
 4. **LGU dashboard and offline sync:** resilient offline redemption with idempotent batch
    sync, plus a per-barangay stock-depletion heat map for the Mayor and DRRMO.
+
+## Beyond the voucher loop
+
+Relief only works if the LGU can see what is happening and citizens can tell them, so
+the app also carries:
+
+- **Citizen incident reports**, located by GPS or by tapping a map zoomed to the
+  reporter's own island group, then routed to the agency that handles that incident type
+  (fire to BFP, sea to PCG, roads to DPWH, and so on).
+- **Report tracking a citizen can follow**, Submitted to Reviewed to Referred to Resolved,
+  plus a message thread with the LGU. Every stage reflects a transition an admin actually
+  recorded; nothing advances on a timer, so the tracker never claims a response that did
+  not happen.
+- **Merchant approval.** A new merchant can sign in immediately but cannot redeem anything
+  until an LGU approves their store, enforced on the redemption routes rather than hidden
+  in the UI.
+- **Energy awareness**, since this is built for a national energy emergency: grid alerts,
+  declared brownout windows, and which service points fall back to a generator.
+- **Public price watch and impact map**, both readable without an account.
 
 ## Demo accounts
 
