@@ -17,10 +17,12 @@ import { qk } from "@/lib/queries/keys";
 
 export function useIncidentReports(
   filters: { status?: ReportStatus; type?: IncidentType } = {},
+  enabled = true,
 ) {
   return useQuery({
     queryKey: [...qk.incidentReports, filters],
     queryFn: ({ signal }) => listIncidentReports(filters, signal),
+    enabled,
   });
 }
 

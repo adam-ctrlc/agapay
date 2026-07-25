@@ -17,11 +17,12 @@ import { Text } from "@/components/ui/text";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDialog } from "@/components/ui/dialog";
+import { Segmented, type SegmentedOption } from "@/components/ui/segmented";
+import { SectionLabel } from "@/components/ui/list-group";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const CATEGORIES: { key: PriceCategory; label: string }[] = [
+const CATEGORIES: SegmentedOption<PriceCategory>[] = [
   { key: "fuel", label: "Fuel" },
   { key: "fare", label: "Fare" },
   { key: "commodity", label: "Market" },
@@ -46,39 +47,23 @@ export default function LguPrices() {
       refreshing={prices.isRefetching}
       onRefresh={() => prices.refetch()}
     >
-      <Text variant="title">Manage prices</Text>
+      <View className="gap-0.5 pt-1">
+        <Text className="text-[28px] font-bold leading-tight text-foreground">
+          Prices
+        </Text>
+        <Text className="text-[13px] text-muted-foreground">
+          Keep fuel, fare and market references current.
+        </Text>
+      </View>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Add a price</CardTitle>
-        </CardHeader>
+      <SectionLabel>Add a price</SectionLabel>
+      <View className="rounded-3xl border border-border bg-card p-4">
         <View className="gap-3">
-          <View className="flex-row gap-2">
-            {CATEGORIES.map((c) => {
-              const active = category === c.key;
-              return (
-                <Pressable
-                  key={c.key}
-                  onPress={() => setCategory(c.key)}
-                  className={cn(
-                    "flex-1 items-center rounded-xl border py-2.5",
-                    active
-                      ? "border-primary bg-primary"
-                      : "border-border bg-background",
-                  )}
-                >
-                  <Text
-                    className={cn(
-                      "font-semibold",
-                      active ? "text-primary-foreground" : "text-foreground",
-                    )}
-                  >
-                    {c.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <Segmented
+            value={category}
+            onChange={(next) => setCategory(next)}
+            options={CATEGORIES}
+          />
           <Field label="Name">
             <Input value={name} onChangeText={setName} placeholder="Diesel" />
           </Field>
@@ -102,6 +87,7 @@ export default function LguPrices() {
           <Button
             label="Add price"
             loading={create.isPending}
+            disabled={!name.trim() || !unit.trim() || Number(value) <= 0}
             onPress={() => {
               if (!name.trim() || !Number(value)) {
                 dialog.alert("Enter a name and a value.");
@@ -129,19 +115,22 @@ export default function LguPrices() {
             }}
           />
         </View>
-      </Card>
+      </View>
 
-      <View className="gap-2">
-        <Text variant="heading">Current prices</Text>
+      <View className="gap-3">
+        <SectionLabel>Current prices</SectionLabel>
         {prices.isLoading ? (
           <View className="gap-3">
             {[0, 1, 2].map((i) => (
-              <Skeleton key={i} className="h-20 w-full rounded-2xl" />
+              <Skeleton key={i} className="h-24 w-full rounded-3xl" />
             ))}
           </View>
         ) : (
           prices.data?.map((p) => (
-            <Card key={p.id} className="gap-2">
+            <View
+              key={p.id}
+              className="gap-3 rounded-3xl border border-border bg-card p-4"
+            >
               <View className="flex-row items-center justify-between">
                 <View className="flex-1 pr-2">
                   <Text variant="label">{p.name}</Text>
@@ -182,6 +171,7 @@ export default function LguPrices() {
                   variant="secondary"
                   label="Update"
                   loading={update.isPending && update.variables?.id === p.id}
+                  disabled={Number(edits[p.id]) <= 0}
                   onPress={() => {
                     const v = Number(edits[p.id]);
                     if (!v || v <= 0) {
@@ -210,7 +200,7 @@ export default function LguPrices() {
                   }}
                 />
               </View>
-            </Card>
+            </View>
           ))
         )}
       </View>

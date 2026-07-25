@@ -54,6 +54,7 @@ final class IncidentReportResource extends JsonResource
             'on_impact_map' => $this->hazard_event_id !== null,
             'reporter' => $this->whenLoaded('user', fn () => $this->user?->name),
             'referrals' => ReferralResource::collection($this->whenLoaded('referrals')),
+            'comment_count' => $this->whenCounted('comments', fn () => (int) $this->comments_count, 0),
             'reviewed_at' => $this->reviewed_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
         ];

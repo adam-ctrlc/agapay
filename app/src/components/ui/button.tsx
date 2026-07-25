@@ -66,13 +66,20 @@ export function Button({
     <Pressable
       className={cn(
         buttonVariants({ variant, size }),
-        (disabled || loading) && "opacity-50",
+        loading && "opacity-60",
+        // Disabled reads as its own flat state, not a faded copy of the button.
+        disabled && !loading && "border border-border bg-muted",
         className,
       )}
       disabled={disabled || loading}
       {...props}
     >
-      <Text className={cn(buttonTextVariants({ variant }))}>
+      <Text
+        className={cn(
+          buttonTextVariants({ variant }),
+          disabled && !loading && "text-muted-foreground",
+        )}
+      >
         {loading ? "Please wait…" : label}
       </Text>
     </Pressable>

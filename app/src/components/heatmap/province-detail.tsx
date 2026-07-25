@@ -1,23 +1,16 @@
 import { Pressable, View } from "react-native";
-import { CloudRain, X } from "phosphor-react-native";
+import { CloudRain, Warning, X } from "phosphor-react-native";
 
 import type { ProvinceWeather } from "@/lib/api/weather";
 import { useProvinceDetail } from "@/lib/queries/heatmap";
+import { cn } from "@/lib/utils";
 import { PH_COLORS } from "@/lib/theme";
-import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatTile } from "@/components/dashboard/stat-tile";
 import { colorForRatio } from "@/components/heatmap/severity-scale";
 import { hazardLabel, hazardWhen } from "@/components/heatmap/hazard-labels";
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="flex-1">
-      <Text variant="caption">{label}</Text>
-      <Text className="text-xl font-bold">{value}</Text>
-    </View>
-  );
-}
 
 export function ProvinceDetail({
   code,
@@ -30,33 +23,53 @@ export function ProvinceDetail({
 }) {
   const detail = useProvinceDetail(code);
   const data = detail.data;
+  const events = data?.events.slice(0, 6) ?? [];
 
   return (
-    <Card className="gap-3 border-primary">
+    <View className="gap-3 rounded-[28px] border border-primary bg-card p-4">
       <View className="flex-row items-start justify-between gap-2">
-        <Text variant="heading">{data?.name ?? code}</Text>
-        <Pressable onPress={onClose} hitSlop={8} className="active:opacity-60">
-          <X size={20} color={PH_COLORS.mutedForeground} />
+        <Text className="flex-1 text-[19px] font-bold leading-tight text-foreground">
+          {data?.name ?? code}
+        </Text>
+        <Pressable
+          onPress={onClose}
+          hitSlop={8}
+          android_ripple={null}
+          className="h-7 w-7 items-center justify-center rounded-full bg-muted active:opacity-60"
+        >
+          <X size={15} color={PH_COLORS.mutedForeground} weight="bold" />
         </Pressable>
       </View>
 
       {detail.isLoading ? (
-        <Skeleton className="h-16 w-full rounded-xl" />
+        <Skeleton className="h-20 w-full rounded-3xl" />
       ) : data ? (
         <>
           <View className="flex-row gap-3">
-            <Stat
-              label="People affected"
+            <StatTile
               value={data.affected_people.toLocaleString()}
+              label="Affected"
+              tint="#e8effb"
             />
-            <Stat label="Severity" value={`${data.severity}/100`} />
-            <Stat label="Events" value={String(data.event_count)} />
+            <StatTile
+              value={`${data.severity}/100`}
+              label="Severity"
+              tint="#fce8ea"
+            />
+            <StatTile
+              value={String(data.event_count)}
+              label="Events"
+              tint="#f1f3f6"
+            />
           </View>
 
           {weather ? (
-            <View className="flex-row items-center gap-2">
-              <CloudRain size={16} color={PH_COLORS.blue} weight="duotone" />
-              <Text variant="caption">
+            <View
+              className="flex-row items-center gap-2 rounded-2xl px-3.5 py-3"
+              style={{ backgroundColor: "#e8effb" }}
+            >
+              <CloudRain size={17} color={PH_COLORS.blue} weight="duotone" />
+              <Text className="flex-1 text-[12px] text-foreground">
                 {weather.description ?? "Weather"}
                 {weather.temperature != null
                   ? ` · ${Math.round(weather.temperature)}°C`
@@ -71,29 +84,40 @@ export function ProvinceDetail({
             </View>
           ) : null}
 
-          {data.events.length === 0 ? (
-            <Text variant="caption">
-              No recorded hazards here in the selected window.
-            </Text>
+          {events.length === 0 ? (
+            <EmptyState
+              icon={Warning}
+              title="No recorded hazards"
+              description="Nothing has been logged for this province in the selected window."
+              compact
+            />
           ) : (
-            <View className="gap-2">
-              {data.events.slice(0, 6).map((event) => (
+            <View className="overflow-hidden rounded-2xl bg-muted">
+              {events.map((event, index) => (
                 <View
                   key={event.id}
-                  className="flex-row items-start gap-2 border-t border-border pt-2"
+                  className={cn(
+                    "flex-row items-start gap-2.5 px-3.5 py-3",
+                    index !== events.length - 1 && "border-b border-border",
+                  )}
                 >
                   <View
                     className="mt-1.5 h-2 w-2 rounded-full"
-                    style={{ backgroundColor: colorForRatio(event.severity / 100) }}
+                    style={{
+                      backgroundColor: colorForRatio(event.severity / 100),
+                    }}
                   />
                   <View className="flex-1">
-                    <Text variant="label" numberOfLines={1}>
+                    <Text
+                      numberOfLines={1}
+                      className="text-[14px] font-semibold text-foreground"
+                    >
                       {hazardLabel(event.type)}
                       {event.magnitude != null ? ` M${event.magnitude}` : ""}
                       {" · "}
                       {event.title}
                     </Text>
-                    <Text variant="caption">
+                    <Text className="text-[12px] text-muted-foreground">
                       {event.affected_people != null
                         ? `${event.affected_people.toLocaleString()} affected · `
                         : ""}
@@ -106,8 +130,10 @@ export function ProvinceDetail({
           )}
         </>
       ) : (
-        <Text className="text-destructive">Couldn&apos;t load this province.</Text>
+        <Text className="text-[13px] font-semibold text-destructive">
+          Couldn&apos;t load this province.
+        </Text>
       )}
-    </Card>
+    </View>
   );
 }

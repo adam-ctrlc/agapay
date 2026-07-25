@@ -8,6 +8,7 @@ import { usePriceRegions, usePrices } from "@/lib/queries/prices";
 import { cn } from "@/lib/utils";
 import { PH_COLORS } from "@/lib/theme";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Text } from "@/components/ui/text";
 import { Skeleton } from "@/components/ui/skeleton";
 import { IconInput } from "@/components/ui/icon-input";
@@ -121,9 +122,13 @@ export function PriceList() {
       ) : query.isError ? (
         <Text className="text-destructive">Couldn&apos;t load prices.</Text>
       ) : items.length === 0 ? (
-        <Card>
-          <Text variant="caption">No prices match your search.</Text>
-        </Card>
+        <EmptyState
+          icon={MagnifyingGlass}
+          title="No prices found"
+          description="Nothing matches that search. Try a different item name or clear the filter."
+          tint={PH_COLORS.white}
+          color={PH_COLORS.mutedForeground}
+        />
       ) : (
         <View className="gap-3">
           {items.map((price) => (

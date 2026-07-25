@@ -10,7 +10,6 @@ return new class extends Migration
     {
         Schema::create('beneficiaries', function (Blueprint $table) {
             $table->id();
-            $table->string('phil_sys_id')->nullable()->index();
             $table->string('dswd_id')->nullable()->index();
             $table->string('household_number')->nullable();
             $table->string('full_name');

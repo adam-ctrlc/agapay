@@ -27,9 +27,7 @@ final class EligibilityTest extends TestCase
     {
         $this->makeFoodScenario();
 
-        $stranger = User::factory()->citizen()->create([
-            'phil_sys_id' => 'PSN-NOT-LISTED',
-        ]);
+        $stranger = User::factory()->citizen()->create();
 
         $this->withAuth($stranger)->postJson('/api/eligibility/verify')
             ->assertOk()

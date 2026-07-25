@@ -54,6 +54,7 @@ export type IncidentReport = {
   on_impact_map: boolean;
   reporter?: string | null;
   referrals?: Referral[];
+  comment_count: number;
   reviewed_at: string | null;
   created_at: string | null;
 };

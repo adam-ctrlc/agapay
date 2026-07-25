@@ -16,7 +16,6 @@ class BeneficiaryFactory extends Factory
     public function definition(): array
     {
         return [
-            'phil_sys_id' => fake()->unique()->numerify('PSN-####-####-####'),
             'dswd_id' => fake()->unique()->numerify('DSWD-######'),
             'household_number' => fake()->numerify('HH-#####'),
             'full_name' => fake()->name(),

@@ -12,7 +12,7 @@ final class Beneficiary extends Model
     use HasFactory;
 
     protected $fillable = [
-        'phil_sys_id',
+        'user_id',
         'dswd_id',
         'household_number',
         'full_name',

@@ -20,7 +20,9 @@ export default function Reports() {
         <BackBar />
 
         <View className="gap-0.5">
-          <Text variant="title">Incident reports</Text>
+          <Text className="text-[28px] font-bold leading-tight text-foreground">
+            Incident reports
+          </Text>
         </View>
 
         <ReportsAdmin />

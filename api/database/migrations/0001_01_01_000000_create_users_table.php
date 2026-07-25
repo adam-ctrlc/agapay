@@ -18,7 +18,6 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('role')->default('citizen')->index();
-            $table->string('phil_sys_id')->nullable()->unique();
             $table->string('phone')->nullable();
             $table->unsignedBigInteger('barangay_id')->nullable()->index();
             $table->unsignedBigInteger('location_id')->nullable()->index();

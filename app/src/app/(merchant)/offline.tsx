@@ -1,35 +1,36 @@
 import { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { CameraView, useCameraPermissions } from "expo-camera";
+import { CheckCircle, CloudArrowUp, Lightning, Trash, WarningCircle } from "phosphor-react-native";
 
 import type { BatchItem, BatchResult } from "@/lib/api/redemptions";
 import { useOfflineSync } from "@/lib/queries/redemptions";
 import { useVoucherKey } from "@/lib/queries/voucher-key";
 import { tokenFromQrPayload, verifyVoucherToken } from "@/lib/voucher/verify";
 import { uuidv4 } from "@/lib/uuid";
-import { cn } from "@/lib/utils";
+import { PH_COLORS } from "@/lib/theme";
 import { Screen } from "@/components/ui/screen";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Text } from "@/components/ui/text";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { useDialog } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useDialog } from "@/components/ui/dialog";
+import { Segmented } from "@/components/ui/segmented";
+import { SectionLabel } from "@/components/ui/list-group";
+import { StatTile } from "@/components/dashboard/stat-tile";
+import { ScannerFrame } from "@/components/merchant/scanner-frame";
+import {
+  SCAN_MODES,
+  manualPlaceholder,
+  type ScanMode,
+} from "@/components/merchant/scan-modes";
 
-type Mode = "scan" | "sms" | "token";
 type Tag = "verified" | "expired" | "unverified";
 
 type QueuedItem = BatchItem & { tag: Tag };
 
 const QUEUE_KEY = "ayudalock.offline_queue";
-
-const MODE_LABELS: Record<Mode, string> = {
-  scan: "Scan QR",
-  sms: "SMS code",
-  token: "QR token",
-};
 
 const TAG_LABELS: Record<Tag, string> = {
   verified: "signature verified",
@@ -60,7 +61,7 @@ function tagVariant(tag: Tag) {
 }
 
 export default function MerchantOffline() {
-  const [mode, setMode] = useState<Mode>("scan");
+  const [mode, setMode] = useState<ScanMode>("scan");
   const [value, setValue] = useState("");
   const [queue, setQueue] = useState<QueuedItem[]>([]);
   const [results, setResults] = useState<BatchResult[]>([]);
@@ -68,7 +69,6 @@ export default function MerchantOffline() {
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [scanned, setScanned] = useState(false);
-  const [permission, requestPermission] = useCameraPermissions();
 
   const sync = useOfflineSync();
   const voucherKey = useVoucherKey();
@@ -155,11 +155,6 @@ export default function MerchantOffline() {
   async function onManualAdd() {
     const v = value.trim();
 
-    if (!v) {
-      setError("Enter a code first.");
-      return;
-    }
-
     switch (mode) {
       case "sms":
         addSmsCode(v);
@@ -183,148 +178,183 @@ export default function MerchantOffline() {
   }
 
   const keyReady = voucherKey.data != null;
+  const verifiedCount = queue.filter((q) => q.tag === "verified").length;
 
   return (
-    <Screen edges={["top"]}>
-      <View className="gap-1">
-        <Text variant="title">Offline queue</Text>
-        <Text variant="subtitle">
+    <Screen>
+      <View className="gap-0.5 pt-1">
+        <Text className="text-[28px] font-bold leading-tight text-foreground">
+          Offline queue
+        </Text>
+        <Text className="text-[13px] text-muted-foreground">
           Capture redemptions during a brownout, then sync when back online.
         </Text>
       </View>
 
-      <Card className={cn("flex-row items-center justify-between p-3")}>
-        <View className="flex-1 pr-2">
-          <Text variant="label">Offline verification</Text>
-          <Text variant="caption">
+      <View
+        className="flex-row items-center gap-3 rounded-3xl p-4"
+        style={{ backgroundColor: keyReady ? "#e1f3ec" : "#fdf1cf" }}
+      >
+        <View
+          className="h-10 w-10 items-center justify-center rounded-2xl"
+          style={{ backgroundColor: keyReady ? "#c7e6d7" : "#f6e3ab" }}
+        >
+          <Lightning
+            size={20}
+            color={keyReady ? PH_COLORS.success : "#8a6800"}
+            weight="fill"
+          />
+        </View>
+        <View className="flex-1">
+          <Text className="text-sm font-bold text-foreground">
+            {keyReady ? "Offline verification ready" : "Signing key not cached"}
+          </Text>
+          <Text className="text-xs text-muted-foreground">
             {keyReady
-              ? "Signing key cached. QR vouchers verify without a connection."
-              : "Connect once to cache the signing key."}
+              ? "QR vouchers verify on this device without a connection."
+              : "Connect once to cache the key, then you can verify offline."}
           </Text>
         </View>
-        <Badge
-          variant={keyReady ? "success" : "muted"}
-          label={keyReady ? "ready" : "no key"}
-        />
-      </Card>
+      </View>
 
-      <View className="flex-row gap-2">
-        {(["scan", "sms", "token"] as Mode[]).map((m) => {
-          const active = mode === m;
-          return (
-            <Pressable
-              key={m}
+      <View className="flex-row gap-3">
+        <StatTile value={String(queue.length)} label="Queued" tint="#e8effb" />
+        <StatTile
+          value={String(verifiedCount)}
+          label="Verified"
+          tint="#e1f3ec"
+          color={PH_COLORS.success}
+        />
+        <StatTile
+          value={String(queue.length - verifiedCount)}
+          label="Unverified"
+          tint="#f1f3f6"
+        />
+      </View>
+
+      <SectionLabel>Add a redemption</SectionLabel>
+      <Segmented
+        value={mode}
+        onChange={(next) => {
+          setMode(next);
+          setScanned(false);
+          setError(null);
+          setNotice(null);
+        }}
+        options={SCAN_MODES}
+      />
+
+      {mode === "scan" ? (
+        <>
+          <ScannerFrame
+            height={256}
+            paused={scanned}
+            caption={
+              scanned
+                ? undefined
+                : "Point the camera at the citizen's voucher QR."
+            }
+            onScan={onScan}
+          />
+          {scanned ? (
+            <Button
+              variant="outline"
+              label="Scan another"
               onPress={() => {
-                setMode(m);
                 setScanned(false);
                 setError(null);
                 setNotice(null);
               }}
-              className={cn(
-                "flex-1 items-center rounded-xl border py-3",
-                active ? "border-primary bg-primary" : "border-border bg-background",
-              )}
-            >
-              <Text
-                numberOfLines={1}
-                className={cn(
-                  "font-semibold",
-                  active ? "text-primary-foreground" : "text-foreground",
-                )}
-              >
-                {MODE_LABELS[m]}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {mode === "scan" ? (
-        !permission ? (
-          <Skeleton className="h-64 w-full rounded-2xl" />
-        ) : !permission.granted ? (
-          <Card className="items-center gap-3 py-6">
-            <Text variant="caption" className="text-center">
-              Camera access is needed to scan voucher QR codes.
-            </Text>
-            <Button label="Enable camera" onPress={requestPermission} />
-          </Card>
-        ) : (
-          <View className="gap-3">
-            <View className="h-64 w-full overflow-hidden rounded-2xl border border-border bg-black">
-              <CameraView
-                style={{ flex: 1 }}
-                facing="back"
-                barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-                onBarcodeScanned={scanned ? undefined : ({ data }) => onScan(data)}
-              />
-            </View>
-            {scanned ? (
-              <Button
-                variant="outline"
-                label="Scan another"
-                onPress={() => {
-                  setScanned(false);
-                  setError(null);
-                  setNotice(null);
-                }}
-              />
-            ) : (
-              <Text variant="caption" className="text-center">
-                Point the camera at the citizen&apos;s voucher QR.
-              </Text>
-            )}
-          </View>
-        )
+            />
+          ) : null}
+        </>
       ) : (
-        <View className="flex-row gap-2">
+        <View className="flex-row gap-2 rounded-[28px] border border-border bg-card p-4">
           <Input
             className="flex-1"
             value={value}
             onChangeText={setValue}
             autoCapitalize="none"
             keyboardType={mode === "sms" ? "number-pad" : "default"}
-            placeholder={mode === "sms" ? "SMS code" : "Voucher token"}
+            placeholder={manualPlaceholder(mode)}
           />
-          <Button variant="secondary" label="Add" onPress={onManualAdd} />
+          <Button
+            variant="secondary"
+            label="Add"
+            disabled={!value.trim()}
+            onPress={onManualAdd}
+          />
         </View>
       )}
 
-      {notice ? <Text className="text-success">{notice}</Text> : null}
-      {error ? <Text className="text-destructive">{error}</Text> : null}
+      {notice ? (
+        <View className="flex-row gap-2 rounded-3xl p-4" style={{ backgroundColor: "#e1f3ec" }}>
+          <CheckCircle size={18} color={PH_COLORS.success} weight="fill" />
+          <Text className="flex-1 text-[13px] text-foreground">{notice}</Text>
+        </View>
+      ) : null}
 
-      <View className="gap-2">
-        <Text variant="heading">Queued ({queue.length})</Text>
-        {queue.length === 0 ? (
-          <Text variant="caption">Nothing queued yet.</Text>
-        ) : (
-          queue.map((it) => (
-            <Card
+      {error ? (
+        <View className="flex-row gap-2 rounded-3xl p-4" style={{ backgroundColor: "#fce8ea" }}>
+          <WarningCircle size={18} color={PH_COLORS.red} weight="fill" />
+          <Text className="flex-1 text-[13px] font-semibold text-destructive">
+            {error}
+          </Text>
+        </View>
+      ) : null}
+
+      <SectionLabel>Waiting to sync</SectionLabel>
+      {queue.length === 0 ? (
+        <EmptyState
+          icon={CloudArrowUp}
+          title="Nothing queued"
+          description="Anything you scan while offline waits here until you are back online and sync."
+        />
+      ) : (
+        <View className="overflow-hidden rounded-3xl border border-border bg-card">
+          {queue.map((it, index) => (
+            <View
               key={it.client_uuid}
-              className="flex-row items-center justify-between p-3"
+              className={
+                index === queue.length - 1
+                  ? "flex-row items-center gap-3 px-4 py-3.5"
+                  : "flex-row items-center gap-3 border-b border-border px-4 py-3.5"
+              }
             >
-              <View className="flex-1 pr-2 gap-1">
-                <Text variant="label">
+              <View className="flex-1 gap-1">
+                <Text
+                  numberOfLines={1}
+                  className="text-[14px] font-semibold text-foreground"
+                >
                   {it.sms_code ?? `${it.token?.slice(0, 16)}...`}
                 </Text>
-                <Badge variant={tagVariant(it.tag)} label={TAG_LABELS[it.tag]} />
+                <View className="flex-row">
+                  <Badge variant={tagVariant(it.tag)} label={TAG_LABELS[it.tag]} />
+                </View>
               </View>
               <Pressable
+                hitSlop={8}
+                android_ripple={null}
+                className="active:opacity-60"
                 onPress={() =>
                   setQueue((q) =>
                     q.filter((x) => x.client_uuid !== it.client_uuid),
                   )
                 }
               >
-                <Text className="font-medium text-destructive">Remove</Text>
+                <Trash size={19} color={PH_COLORS.red} />
               </Pressable>
-            </Card>
-          ))
-        )}
-      </View>
+            </View>
+          ))}
+        </View>
+      )}
 
       <Button
-        label={`Sync ${queue.length} redemption(s)`}
+        label={
+          queue.length === 0
+            ? "Nothing to sync"
+            : `Sync ${queue.length} redemption${queue.length > 1 ? "s" : ""}`
+        }
         loading={sync.isPending}
         disabled={queue.length === 0}
         onPress={() =>
@@ -343,25 +373,31 @@ export default function MerchantOffline() {
       />
 
       {results.length > 0 ? (
-        <View className="gap-2">
-          <Text variant="heading">Last sync result</Text>
-          {results.map((r) => (
-            <Card
-              key={r.client_uuid}
-              className="flex-row items-center justify-between p-3"
-            >
-              <View className="flex-1 pr-2">
-                <Text variant="caption">{r.client_uuid.slice(0, 8)}</Text>
-                {r.reason ? (
-                  <Text variant="caption" className="text-destructive">
-                    {r.reason}
+        <>
+          <SectionLabel>Last sync result</SectionLabel>
+          <View className="overflow-hidden rounded-3xl border border-border bg-card">
+            {results.map((r, index) => (
+              <View
+                key={r.client_uuid}
+                className={
+                  index === results.length - 1
+                    ? "flex-row items-center gap-3 px-4 py-3.5"
+                    : "flex-row items-center gap-3 border-b border-border px-4 py-3.5"
+                }
+              >
+                <View className="flex-1">
+                  <Text className="text-[13px] font-medium text-muted-foreground">
+                    {r.client_uuid.slice(0, 8)}
                   </Text>
-                ) : null}
+                  {r.reason ? (
+                    <Text className="text-xs text-destructive">{r.reason}</Text>
+                  ) : null}
+                </View>
+                <Badge variant={resultVariant(r.status)} label={r.status} />
               </View>
-              <Badge variant={resultVariant(r.status)} label={r.status} />
-            </Card>
-          ))}
-        </View>
+            ))}
+          </View>
+        </>
       ) : null}
     </Screen>
   );

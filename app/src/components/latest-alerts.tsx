@@ -6,10 +6,13 @@ import type {
   AnnouncementCategory,
 } from "@/lib/api/announcements";
 import { useAnnouncements } from "@/lib/queries/announcements";
-import { Card } from "@/components/ui/card";
+import { useAuth } from "@/lib/auth/context";
+import { announcementsHref } from "@/lib/auth/role-routes";
+import { cn } from "@/lib/utils";
 import { Text } from "@/components/ui/text";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SectionLabel } from "@/components/ui/list-group";
 
 type BadgeVariant = "success" | "destructive" | "accent" | "secondary";
 
@@ -33,53 +36,65 @@ function timeAgo(iso: string | null) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function AlertRow({ item }: { item: Announcement }) {
+function AlertRow({ item, last }: { item: Announcement; last: boolean }) {
   const cat = CATEGORY[item.category];
+
   return (
-    <Card className="gap-1.5">
+    <View className={cn("gap-1.5 px-4 py-3.5", !last && "border-b border-border")}>
       <View className="flex-row items-center justify-between gap-2">
         <Badge variant={cat.variant} label={cat.label} />
-        <Text variant="caption">{timeAgo(item.created_at)}</Text>
+        <Text className="text-[11px] text-muted-foreground">
+          {timeAgo(item.created_at)}
+        </Text>
       </View>
-      <Text variant="label" numberOfLines={1}>
+      <Text
+        numberOfLines={1}
+        className="text-[15px] font-semibold text-foreground"
+      >
         {item.title}
       </Text>
-      <Text variant="caption" numberOfLines={2}>
+      <Text numberOfLines={2} className="text-[13px] text-muted-foreground">
         {item.body}
       </Text>
-    </Card>
+    </View>
   );
 }
 
 export function LatestAlerts() {
+  const { user } = useAuth();
   const query = useAnnouncements();
   const items = (query.data ?? []).slice(0, 2);
+  const href = announcementsHref(user?.role);
 
   if (!query.isLoading && items.length === 0) return null;
 
   return (
     <>
-      <View className="flex-row items-center justify-between">
-        <Text variant="heading">Latest alerts</Text>
-        <Link href="/(citizen)/announcements" asChild>
-          <Pressable hitSlop={8} className="active:opacity-60">
-            <Text variant="caption" className="font-medium text-primary">
-              See all
-            </Text>
-          </Pressable>
-        </Link>
-      </View>
+      <SectionLabel
+        action={
+          <Link href={href} asChild>
+            <Pressable hitSlop={8} className="active:opacity-60">
+              <Text className="text-[13px] font-semibold text-primary">
+                See all
+              </Text>
+            </Pressable>
+          </Link>
+        }
+      >
+        Latest alerts
+      </SectionLabel>
 
       {query.isLoading ? (
-        <View className="gap-3">
-          <Skeleton className="h-24 w-full rounded-2xl" />
-          <Skeleton className="h-24 w-full rounded-2xl" />
-        </View>
+        <Skeleton className="h-40 w-full rounded-3xl" />
       ) : (
-        <Link href="/(citizen)/announcements" asChild>
-          <Pressable className="gap-3 active:opacity-90">
-            {items.map((item) => (
-              <AlertRow key={item.id} item={item} />
+        <Link href={href} asChild>
+          <Pressable className="overflow-hidden rounded-3xl border border-border bg-card active:opacity-90">
+            {items.map((item, index) => (
+              <AlertRow
+                key={item.id}
+                item={item}
+                last={index === items.length - 1}
+              />
             ))}
           </Pressable>
         </Link>

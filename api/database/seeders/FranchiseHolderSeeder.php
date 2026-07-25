@@ -5,47 +5,38 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Models\FranchiseHolder;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 final class FranchiseHolderSeeder extends Seeder
 {
     public function run(): void
     {
-        FranchiseHolder::query()->firstOrCreate(
-            ['license_number' => 'LTFRB-0000001'],
-            [
-                'phil_sys_id' => 'PSN-0002-0002-0002',
-                'plate_number' => 'NGP-1234',
-                'driver_name' => 'Jose Dela Cruz',
-                'franchise_type' => 'jeepney',
-                'barangay' => 'Barangay Commonwealth',
-                'is_active' => true,
-            ],
-        );
+        $driver = User::query()->where('email', 'driver@ayudalock.test')->first();
 
-        FranchiseHolder::query()->firstOrCreate(
-            ['license_number' => 'LTFRB-0000002'],
-            [
-                'phil_sys_id' => 'PSN-0002-0002-0002',
-                'plate_number' => 'NGP-1234',
-                'driver_name' => 'Jose Dela Cruz Jr.',
-                'franchise_type' => 'jeepney',
-                'barangay' => 'Barangay Commonwealth',
-                'is_active' => true,
-            ],
-        );
+        /**
+         * Three franchises for one driver: the duplicate-claim guard has to
+         * see a single person behind several plates.
+         */
+        $franchises = [
+            ['LTFRB-0000001', 'NGP-1234', 'Jose Dela Cruz', 'jeepney'],
+            ['LTFRB-0000002', 'NGP-1234', 'Jose Dela Cruz Jr.', 'jeepney'],
+            ['TNVS-0000003', 'NGP-1234', 'J. Dela Cruz', 'tnvs'],
+        ];
 
-        FranchiseHolder::query()->firstOrCreate(
-            ['license_number' => 'TNVS-0000003'],
-            [
-                'phil_sys_id' => 'PSN-0002-0002-0002',
-                'plate_number' => 'NGP-1234',
-                'driver_name' => 'J. Dela Cruz',
-                'franchise_type' => 'tnvs',
-                'barangay' => 'Barangay Commonwealth',
-                'is_active' => true,
-            ],
-        );
+        foreach ($franchises as [$license, $plate, $name, $type]) {
+            FranchiseHolder::query()->updateOrCreate(
+                ['license_number' => $license],
+                [
+                    'user_id' => $driver?->getKey(),
+                    'plate_number' => $plate,
+                    'driver_name' => $name,
+                    'franchise_type' => $type,
+                    'barangay' => 'Barangay Commonwealth',
+                    'is_active' => true,
+                ],
+            );
+        }
 
         FranchiseHolder::factory()->count(10)->create();
     }

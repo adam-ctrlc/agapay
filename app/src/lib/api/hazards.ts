@@ -47,6 +47,14 @@ export async function createHazard(body: HazardInput) {
   return res.data;
 }
 
+export async function updateHazard(id: number, body: HazardInput) {
+  const res = await apiRequest<{ data: HazardEvent }>(`/hazards/${id}`, {
+    method: "PUT",
+    body,
+  });
+  return res.data;
+}
+
 export function deleteHazard(id: number) {
   return apiRequest<{ message: string }>(`/hazards/${id}`, { method: "DELETE" });
 }

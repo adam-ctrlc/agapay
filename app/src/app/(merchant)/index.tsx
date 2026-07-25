@@ -1,29 +1,42 @@
-import { useState } from "react";
-import { Pressable, View } from "react-native";
-import { CameraView, useCameraPermissions } from "expo-camera";
+import { useMemo, useState } from "react";
+import { View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { CheckCircle, Lightning, Storefront } from "phosphor-react-native";
 
 import { ApiError } from "@/lib/api/client";
 import type { Redemption } from "@/lib/api/redemptions";
 import { useRedeem } from "@/lib/queries/redemptions";
-import { cn } from "@/lib/utils";
+import { useLocations } from "@/lib/queries/locations";
+import { useVoucherKey } from "@/lib/queries/voucher-key";
+import { useAuth } from "@/lib/auth/context";
+import { PH_COLORS } from "@/lib/theme";
 import { Screen } from "@/components/ui/screen";
 import { Text } from "@/components/ui/text";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Segmented } from "@/components/ui/segmented";
+import { SectionLabel } from "@/components/ui/list-group";
 import { NotificationBell } from "@/components/notification-bell";
 import { GridAlertBanner } from "@/components/energy/grid-alert-banner";
+import { powerStatusShortLabel } from "@/components/energy/energy-labels";
+import { ScannerFrame } from "@/components/merchant/scanner-frame";
+import {
+  SCAN_MODES,
+  manualLabel,
+  manualPlaceholder,
+  type ScanMode,
+} from "@/components/merchant/scan-modes";
 
-type Mode = "scan" | "sms" | "token";
+const CARD_COLORS = ["#0b2f8f", "#0038a8", "#1a5ee0"] as const;
 
-const MODE_LABELS: Record<Mode, string> = {
-  scan: "Scan QR",
-  sms: "SMS code",
-  token: "QR token",
-};
+function greeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Magandang umaga";
+  if (hour < 18) return "Magandang hapon";
+  return "Magandang gabi";
+}
 
 function tokenFromScan(data: string) {
   try {
@@ -36,14 +49,25 @@ function tokenFromScan(data: string) {
 }
 
 export default function MerchantRedeem() {
-  const [mode, setMode] = useState<Mode>("scan");
+  const { user } = useAuth();
+  const [mode, setMode] = useState<ScanMode>("scan");
   const [value, setValue] = useState("");
   const [result, setResult] = useState<Redemption | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [scanned, setScanned] = useState(false);
-  const [permission, requestPermission] = useCameraPermissions();
 
   const mutation = useRedeem();
+  const locations = useLocations();
+  const voucherKey = useVoucherKey();
+
+  const firstName =
+    user?.first_name?.trim() || user?.name?.split(" ")[0] || "Vendor";
+
+  const store = useMemo(
+    () =>
+      (locations.data ?? []).find((l) => l.id === user?.location_id) ?? null,
+    [locations.data, user?.location_id],
+  );
 
   function redeem(credential: { token: string } | { sms_code: string }) {
     mutation.mutate(credential, {
@@ -60,11 +84,9 @@ export default function MerchantRedeem() {
   }
 
   function onManualRedeem() {
-    if (!value.trim()) {
-      setError("Enter a code first.");
-      return;
-    }
-    redeem(mode === "token" ? { token: value.trim() } : { sms_code: value.trim() });
+    redeem(
+      mode === "token" ? { token: value.trim() } : { sms_code: value.trim() },
+    );
   }
 
   function onScan(data: string) {
@@ -80,112 +102,160 @@ export default function MerchantRedeem() {
   }
 
   return (
-    <Screen edges={["top"]}>
-      <View className="flex-row items-start justify-between gap-3">
-        <View className="flex-1 gap-1">
-          <Text variant="title">Redeem voucher</Text>
-          <Text variant="subtitle">
-            Scan the QR or enter the citizen&apos;s code.
+    <Screen
+      refreshing={locations.isRefetching}
+      onRefresh={() => locations.refetch()}
+    >
+      <View className="flex-row items-center justify-between gap-3 pt-1">
+        <View className="flex-1">
+          <Text className="text-[13px] font-medium text-muted-foreground">
+            {greeting()},
+          </Text>
+          <Text className="text-[28px] font-bold leading-tight text-foreground">
+            {firstName}
           </Text>
         </View>
         <NotificationBell />
       </View>
 
+      {locations.isLoading ? (
+        <Skeleton className="h-32 w-full rounded-[28px]" />
+      ) : (
+        <LinearGradient
+          colors={CARD_COLORS}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ borderRadius: 28, overflow: "hidden" }}
+        >
+          <View
+            pointerEvents="none"
+            className="absolute -right-10 -top-14 h-44 w-44 rounded-full bg-white/10"
+          />
+          <View
+            pointerEvents="none"
+            className="absolute -bottom-16 -left-8 h-36 w-36 rounded-full bg-white/5"
+          />
+
+          <View className="gap-4 p-5">
+            <View className="flex-row items-center gap-3">
+              <View className="h-11 w-11 items-center justify-center rounded-2xl bg-white/15">
+                <Storefront size={22} color={PH_COLORS.white} weight="fill" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-xs font-semibold uppercase tracking-wide text-white/60">
+                  Redeeming at
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  className="text-lg font-bold leading-tight text-white"
+                >
+                  {store?.name ?? "No store assigned"}
+                </Text>
+              </View>
+            </View>
+
+            <View className="flex-row flex-wrap gap-2">
+              <View className="rounded-full bg-white/15 px-3 py-1.5">
+                <Text className="text-[11px] font-bold text-white">
+                  {store ? powerStatusShortLabel(store.power_status) : "Unassigned"}
+                </Text>
+              </View>
+              {store?.barangay ? (
+                <View className="rounded-full bg-white/15 px-3 py-1.5">
+                  <Text className="text-[11px] font-bold text-white">
+                    {store.barangay}
+                  </Text>
+                </View>
+              ) : null}
+              <View className="flex-row items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5">
+                <Lightning
+                  size={12}
+                  color={PH_COLORS.white}
+                  weight={voucherKey.data ? "fill" : "regular"}
+                />
+                <Text className="text-[11px] font-bold text-white">
+                  {voucherKey.data ? "Offline ready" : "No offline key"}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </LinearGradient>
+      )}
+
       <GridAlertBanner />
 
-      <View className="flex-row gap-2">
-        {(["scan", "sms", "token"] as Mode[]).map((m) => {
-          const active = mode === m;
-          return (
-            <Pressable
-              key={m}
-              onPress={() => {
-                setMode(m);
-                resetScan();
-              }}
-              className={cn(
-                "flex-1 items-center rounded-xl border py-3",
-                active ? "border-primary bg-primary" : "border-border bg-background",
-              )}
-            >
-              <Text
-                numberOfLines={1}
-                className={cn(
-                  "font-semibold",
-                  active ? "text-primary-foreground" : "text-foreground",
-                )}
-              >
-                {MODE_LABELS[m]}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <SectionLabel>How are you redeeming?</SectionLabel>
+      <Segmented
+        value={mode}
+        onChange={(next) => {
+          setMode(next);
+          resetScan();
+        }}
+        options={SCAN_MODES}
+      />
 
       {mode === "scan" ? (
-        !permission ? (
-          <Skeleton className="h-72 w-full rounded-2xl" />
-        ) : !permission.granted ? (
-          <Card className="items-center gap-3 py-6">
-            <Text variant="caption" className="text-center">
-              Camera access is needed to scan voucher QR codes.
-            </Text>
-            <Button label="Enable camera" onPress={requestPermission} />
-          </Card>
-        ) : (
-          <View className="gap-3">
-            <View className="h-72 w-full overflow-hidden rounded-2xl border border-border bg-black">
-              <CameraView
-                style={{ flex: 1 }}
-                facing="back"
-                barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-                onBarcodeScanned={
-                  scanned || mutation.isPending
-                    ? undefined
-                    : ({ data }) => onScan(data)
-                }
-              />
-            </View>
-            <Text variant="caption" className="text-center">
-              {mutation.isPending
-                ? "Verifying voucher…"
-                : "Point the camera at the citizen's voucher QR."}
-            </Text>
-            {scanned || result ? (
-              <Button variant="outline" label="Scan again" onPress={resetScan} />
-            ) : null}
-          </View>
-        )
-      ) : (
         <>
-          <Field label={mode === "sms" ? "6-digit SMS code" : "Voucher token"}>
+          <ScannerFrame
+            paused={scanned || mutation.isPending}
+            caption={
+              mutation.isPending
+                ? "Verifying voucher..."
+                : "Point the camera at the citizen's voucher QR."
+            }
+            onScan={onScan}
+          />
+          {scanned || result ? (
+            <Button variant="outline" label="Scan again" onPress={resetScan} />
+          ) : null}
+        </>
+      ) : (
+        <View className="gap-3 rounded-[28px] border border-border bg-card p-4">
+          <Field label={manualLabel(mode)}>
             <Input
               value={value}
               onChangeText={setValue}
               autoCapitalize="none"
               keyboardType={mode === "sms" ? "number-pad" : "default"}
-              placeholder={mode === "sms" ? "123456" : "Paste voucher token"}
+              placeholder={manualPlaceholder(mode)}
             />
           </Field>
           <Button
             label="Redeem"
             loading={mutation.isPending}
+            disabled={!value.trim()}
             onPress={onManualRedeem}
           />
-        </>
+        </View>
       )}
 
-      {error ? <Text className="text-destructive">{error}</Text> : null}
+      {error ? (
+        <View
+          className="rounded-3xl p-4"
+          style={{ backgroundColor: "#fce8ea" }}
+        >
+          <Text className="text-[13px] font-semibold text-destructive">
+            {error}
+          </Text>
+        </View>
+      ) : null}
 
       {result ? (
-        <Card className="gap-2 border-success">
-          <View className="flex-row items-center justify-between">
-            <Text variant="heading">Redeemed</Text>
-            <Badge variant="success" label={result.source} />
-          </View>
-          <Text variant="label">Quantity released: {result.quantity}</Text>
-          <Text variant="caption">Hand over the goods to the citizen.</Text>
-        </Card>
+        <View
+          className="items-center gap-1 rounded-[28px] p-6"
+          style={{ backgroundColor: "#e1f3ec" }}
+        >
+          <CheckCircle size={44} color={PH_COLORS.success} weight="fill" />
+          <Text className="mt-1 text-[17px] font-bold text-foreground">
+            Voucher redeemed
+          </Text>
+          <Text className="text-[32px] font-bold leading-tight text-foreground">
+            {result.quantity}
+          </Text>
+          <Text className="text-center text-[13px] text-muted-foreground">
+            Hand over the goods to the citizen. Confirmed via {result.source}.
+          </Text>
+        </View>
       ) : null}
     </Screen>
   );

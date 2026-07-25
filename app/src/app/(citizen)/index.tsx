@@ -1,13 +1,13 @@
 import { useCallback } from "react";
 import { Pressable, View } from "react-native";
-import { Link, type Href } from "expo-router";
+import { Link } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import {
+  ArrowRight,
   Basket,
   BellRinging,
   BookOpen,
-  CaretRight,
   Megaphone,
-  SealCheck,
   Tag,
 } from "phosphor-react-native";
 
@@ -16,46 +16,21 @@ import { useClaimReminders } from "@/lib/queries/claim-reminders";
 import { useAuth } from "@/lib/auth/context";
 import { PH_COLORS } from "@/lib/theme";
 import { Screen } from "@/components/ui/screen";
+import { ActionTile } from "@/components/ui/action-tile";
 import { Text } from "@/components/ui/text";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MarketSnapshot } from "@/components/market-snapshot";
 import { LatestAlerts } from "@/components/latest-alerts";
 import { GridAlertBanner } from "@/components/energy/grid-alert-banner";
 import { NotificationBell } from "@/components/notification-bell";
 
-function QuickAction({
-  href,
-  icon,
-  title,
-  subtitle,
-}: {
-  href: Href;
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <Link href={href} asChild>
-      <Pressable className="flex-1 active:opacity-80">
-        <Card className="gap-2">
-          <View className="h-11 w-11 items-center justify-center rounded-xl bg-secondary">
-            {icon}
-          </View>
-          <Text variant="label">{title}</Text>
-          <Text variant="caption">{subtitle}</Text>
-        </Card>
-      </Pressable>
-    </Link>
-  );
-}
+const CARD_COLORS = ["#0b2f8f", "#0038a8", "#1a5ee0"] as const;
 
 function greeting() {
   const hour = new Date().getHours();
-  if (hour < 12) return "Magandang umaga,";
-  if (hour < 18) return "Magandang hapon,";
-  return "Magandang gabi,";
+  if (hour < 12) return "Magandang umaga";
+  if (hour < 18) return "Magandang hapon";
+  return "Magandang gabi";
 }
 
 export default function CitizenHome() {
@@ -65,6 +40,8 @@ export default function CitizenHome() {
   const eligibility = useEligibility();
   const reminders = useClaimReminders();
   const dueCount = (reminders.data ?? []).filter((r) => r.due).length;
+  const programs = eligibility.data?.programs ?? [];
+  const headline = programs[0];
 
   const refreshing = eligibility.isRefetching;
   const onRefresh = useCallback(() => {
@@ -72,114 +49,145 @@ export default function CitizenHome() {
   }, [eligibility]);
 
   return (
-    <Screen edges={["top"]} refreshing={refreshing} onRefresh={onRefresh}>
-      <View className="flex-row items-start justify-between gap-3">
-        <View className="flex-1 gap-1">
-          <Text variant="subtitle">{greeting()}</Text>
-          <Text variant="title">{firstName}!</Text>
-          <Text variant="caption">
-            Maligayang pagdating. Narito ang AyudaLock para tumulong sa iyong
-            ayuda at mga serbisyo.
+    <Screen refreshing={refreshing} onRefresh={onRefresh}>
+      <View className="flex-row items-center justify-between gap-3 pt-1">
+        <View className="flex-1">
+          <Text className="text-[13px] font-medium text-muted-foreground">
+            {greeting()},
+          </Text>
+          <Text className="text-[28px] font-bold leading-tight text-foreground">
+            {firstName}
           </Text>
         </View>
         <NotificationBell />
       </View>
 
-      <GridAlertBanner />
+      {eligibility.isLoading ? (
+        <Skeleton className="h-44 w-full rounded-[28px]" />
+      ) : (
+        <LinearGradient
+          colors={CARD_COLORS}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ borderRadius: 28, overflow: "hidden" }}
+        >
+          <View
+            pointerEvents="none"
+            className="absolute -right-10 -top-14 h-44 w-44 rounded-full bg-white/10"
+          />
+          <View
+            pointerEvents="none"
+            className="absolute -bottom-16 -left-8 h-36 w-36 rounded-full bg-white/5"
+          />
+
+          <View className="gap-5 p-5">
+            {headline ? (
+              <>
+                <View className="gap-1">
+                  <Text className="text-xs font-semibold uppercase tracking-wide text-white/60">
+                    Ready to claim
+                  </Text>
+                  <View className="flex-row items-end gap-2">
+                    <Text className="text-[44px] font-bold leading-none text-white">
+                      {headline.per_beneficiary_cap}
+                    </Text>
+                    <Text className="pb-1.5 text-lg font-semibold text-white/80">
+                      {headline.unit}
+                    </Text>
+                  </View>
+                  <Text className="text-sm text-white/70">
+                    {headline.name}
+                    {programs.length > 1
+                      ? ` and ${programs.length - 1} more program${programs.length > 2 ? "s" : ""}`
+                      : ""}
+                  </Text>
+                </View>
+
+                <Link href="/(citizen)/locations" asChild>
+                  <Pressable className="flex-row items-center justify-center gap-2 rounded-2xl bg-white py-3.5 active:opacity-80">
+                    <Text className="text-[15px] font-bold text-primary">
+                      Find a place to claim
+                    </Text>
+                    <ArrowRight size={17} color={PH_COLORS.blue} weight="bold" />
+                  </Pressable>
+                </Link>
+              </>
+            ) : (
+              <View className="gap-4 py-2">
+                <View className="gap-1">
+                  <Text className="text-xl font-bold text-white">
+                    Not listed yet
+                  </Text>
+                  <Text className="text-sm text-white/70">
+                    You are not on a relief programme right now. Your LGU adds
+                    households as lists are verified.
+                  </Text>
+                </View>
+                <Link href="/guides" asChild>
+                  <Pressable className="flex-row items-center justify-center gap-2 rounded-2xl bg-white/15 py-3 active:opacity-80">
+                    <Text className="text-sm font-bold text-white">
+                      See what to prepare
+                    </Text>
+                  </Pressable>
+                </Link>
+              </View>
+            )}
+          </View>
+        </LinearGradient>
+      )}
 
       {dueCount > 0 ? (
         <Link href="/(citizen)/locations?view=saved" asChild>
-          <Pressable className="active:opacity-90">
-            <Card className="flex-row items-center gap-3 border-accent">
-              <View className="h-11 w-11 items-center justify-center rounded-xl bg-secondary">
-                <BellRinging size={22} color={PH_COLORS.blue} weight="fill" />
+          <Pressable className="active:opacity-80">
+            <View
+              className="flex-row items-center gap-3 rounded-3xl p-4"
+              style={{ backgroundColor: "#fff6d6" }}
+            >
+              <View className="h-10 w-10 items-center justify-center rounded-2xl bg-accent">
+                <BellRinging size={20} color="#3a2e00" weight="fill" />
               </View>
               <View className="flex-1">
-                <Text variant="label">
-                  You have {dueCount} plan{dueCount > 1 ? "s" : ""} to claim
-                  today
+                <Text className="text-sm font-bold text-foreground">
+                  {dueCount} plan{dueCount > 1 ? "s" : ""} to claim today
                 </Text>
-                <Text variant="caption">Tap to review your saved plans.</Text>
+                <Text className="text-xs text-muted-foreground">
+                  Tap to review your saved plans
+                </Text>
               </View>
-              <CaretRight size={18} color={PH_COLORS.mutedForeground} />
-            </Card>
+              <ArrowRight size={16} color="#3a2e00" weight="bold" />
+            </View>
           </Pressable>
         </Link>
       ) : null}
 
-      <Card className="gap-3">
-        <View className="flex-row items-center gap-2">
-          <SealCheck size={22} color={PH_COLORS.success} weight="fill" />
-          <Text variant="heading">Your eligibility</Text>
-        </View>
-        {eligibility.isLoading ? (
-          <Skeleton className="h-6 w-2/3" />
-        ) : eligibility.isError ? (
-          <Text className="text-destructive">
-            Couldn&apos;t verify eligibility.
-          </Text>
-        ) : eligibility.data?.eligible ? (
-          <View className="flex-row flex-wrap gap-2">
-            {eligibility.data.programs.map((p) => (
-              <Badge key={p.id} variant="secondary" label={p.name} />
-            ))}
-          </View>
-        ) : (
-          <Text variant="caption">
-            You are not currently listed for any relief program.
-          </Text>
-        )}
-      </Card>
+      <GridAlertBanner />
 
-      <Link href="/report" asChild>
-        <Pressable className="active:opacity-80">
-          <Card className="flex-row items-center gap-3">
-            <View className="h-11 w-11 items-center justify-center rounded-xl bg-secondary">
-              <Megaphone size={22} color={PH_COLORS.red} weight="duotone" />
-            </View>
-            <View className="flex-1 gap-0.5">
-              <Text variant="label">Report an incident</Text>
-              <Text variant="caption">
-                Flooding, fire, a blocked road or a downed line near you
-              </Text>
-            </View>
-            <CaretRight size={18} color={PH_COLORS.mutedForeground} />
-          </Card>
-        </Pressable>
-      </Link>
-
-      <Text variant="heading">Quick actions</Text>
       <View className="flex-row gap-3">
-        <QuickAction
+        <ActionTile
           href="/(citizen)/locations"
-          title="Claim relief"
-          subtitle="Reserve food or fuel"
-          icon={<Basket size={22} color={PH_COLORS.blue} weight="duotone" />}
+          label="Claim"
+          tint="#e8effb"
+          icon={<Basket size={26} color={PH_COLORS.blue} weight="duotone" />}
         />
-        <QuickAction
+        <ActionTile
           href="/(citizen)/locations?view=prices"
-          title="Price Watch"
-          subtitle="Fuel, fare, market"
-          icon={<Tag size={22} color={PH_COLORS.blue} weight="duotone" />}
+          label="Prices"
+          tint="#fdf1cf"
+          icon={<Tag size={26} color="#8a6800" weight="duotone" />}
+        />
+        <ActionTile
+          href="/report"
+          label="Report"
+          tint="#fce8ea"
+          icon={<Megaphone size={26} color={PH_COLORS.red} weight="duotone" />}
+        />
+        <ActionTile
+          href="/guides"
+          label="Gabay"
+          tint="#e1f3ec"
+          icon={<BookOpen size={26} color={PH_COLORS.success} weight="duotone" />}
         />
       </View>
-
-      <Link href="/guides" asChild>
-        <Pressable className="active:opacity-80">
-          <Card className="flex-row items-center gap-3">
-            <View className="h-11 w-11 items-center justify-center rounded-xl bg-secondary">
-              <BookOpen size={22} color={PH_COLORS.blue} weight="duotone" />
-            </View>
-            <View className="flex-1 gap-0.5">
-              <Text variant="label">Gabay sa Requirements</Text>
-              <Text variant="caption">
-                IDs, benefits, and documents: what to prepare and where to go
-              </Text>
-            </View>
-            <CaretRight size={18} color={PH_COLORS.mutedForeground} />
-          </Card>
-        </Pressable>
-      </Link>
 
       <MarketSnapshot />
 

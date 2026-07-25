@@ -60,16 +60,13 @@ abstract class TestCase extends BaseTestCase
             'quantity_locked' => 0,
         ]);
 
-        $philSysId = $overrides['phil_sys_id'] ?? 'PSN-TEST-0001';
-
-        Beneficiary::factory()->create([
-            'phil_sys_id' => $philSysId,
-            'is_active' => true,
+        $citizen = User::factory()->citizen()->create([
+            'barangay_id' => $barangay->id,
         ]);
 
-        $citizen = User::factory()->citizen()->create([
-            'phil_sys_id' => $philSysId,
-            'barangay_id' => $barangay->id,
+        Beneficiary::factory()->create([
+            'user_id' => $citizen->id,
+            'is_active' => true,
         ]);
 
         $merchant = User::factory()->merchant()->create([

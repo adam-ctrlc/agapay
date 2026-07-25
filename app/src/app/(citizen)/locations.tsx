@@ -4,12 +4,7 @@ import { useLocalSearchParams } from "expo-router";
 import DateTimePicker, {
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
-import {
-  CheckCircle,
-  GasPump,
-  HandHeart,
-  Storefront,
-} from "phosphor-react-native";
+import { Basket, GasPump, Minus, Plus, Storefront, Tag } from "phosphor-react-native";
 
 import { ApiError } from "@/lib/api/client";
 import type { Inventory, Location } from "@/lib/api/locations";
@@ -22,12 +17,16 @@ import { cn } from "@/lib/utils";
 import { unitLabel } from "@/lib/units";
 import { PH_COLORS } from "@/lib/theme";
 import { Screen } from "@/components/ui/screen";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Text } from "@/components/ui/text";
-import { Card } from "@/components/ui/card";
 import { useDialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Stepper } from "@/components/ui/stepper";
+import {
+  ChipRow,
+  Segmented,
+  type SegmentedOption,
+} from "@/components/ui/segmented";
 import { ClaimHistory } from "@/components/claim-history";
 import { MyVouchers } from "@/components/my-vouchers";
 import { ClaimRemindersList } from "@/components/claim-reminders-list";
@@ -37,28 +36,45 @@ import { GridAlertBanner } from "@/components/energy/grid-alert-banner";
 import {
   powerStatusColor,
   powerStatusShortLabel,
+  powerStatusTint,
 } from "@/components/energy/energy-labels";
-
-function Step({ num, text }: { num: string; text: string }) {
-  return (
-    <View className="flex-row items-center gap-3">
-      <View className="h-7 w-7 items-center justify-center rounded-full bg-primary">
-        <Text className="text-sm font-bold text-primary-foreground">{num}</Text>
-      </View>
-      <Text className="flex-1 text-sm text-foreground">{text}</Text>
-    </View>
-  );
-}
 
 type Section = "claim" | "prices";
 type View2 = "available" | "saved" | "vouchers" | "history";
 
-const VIEW_LABELS: Record<View2, string> = {
-  available: "Available",
-  saved: "Saved",
-  vouchers: "Vouchers",
-  history: "History",
-};
+function segmentIconColor(active: boolean) {
+  return active ? PH_COLORS.white : PH_COLORS.mutedForeground;
+}
+
+const SECTIONS: SegmentedOption<Section>[] = [
+  {
+    key: "claim",
+    label: "Claim relief",
+    icon: (active) => (
+      <Basket size={17} color={segmentIconColor(active)} weight="fill" />
+    ),
+  },
+  {
+    key: "prices",
+    label: "Price Watch",
+    icon: (active) => (
+      <Tag size={17} color={segmentIconColor(active)} weight="fill" />
+    ),
+  },
+];
+
+const VIEWS: SegmentedOption<View2>[] = [
+  { key: "available", label: "Available" },
+  { key: "saved", label: "Saved" },
+  { key: "vouchers", label: "Vouchers" },
+  { key: "history", label: "History" },
+];
+
+const STEPS = [
+  { num: "1", text: "Reserve" },
+  { num: "2", text: "Show QR" },
+  { num: "3", text: "Collect" },
+];
 
 function initialSection(view?: string): Section {
   switch (view) {
@@ -82,6 +98,100 @@ function initialView(view?: string): View2 {
   }
 }
 
+function HowToStrip() {
+  return (
+    <View className="flex-row items-center rounded-3xl bg-secondary px-3 py-3">
+      {STEPS.map((step, index) => (
+        <View key={step.num} className="flex-1 flex-row items-center gap-2">
+          <View className="h-6 w-6 items-center justify-center rounded-full bg-primary">
+            <Text className="text-[11px] font-bold text-primary-foreground">
+              {step.num}
+            </Text>
+          </View>
+          <Text className="text-[12px] font-semibold text-foreground">
+            {step.text}
+          </Text>
+          {index < STEPS.length - 1 ? (
+            <View className="h-px flex-1 bg-primary/20" />
+          ) : null}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function PowerPill({ status }: { status: Location["power_status"] }) {
+  return (
+    <View
+      className="flex-row items-center gap-1.5 rounded-full px-2.5 py-1"
+      style={{ backgroundColor: powerStatusTint(status) }}
+    >
+      <View
+        className="h-1.5 w-1.5 rounded-full"
+        style={{ backgroundColor: powerStatusColor(status) }}
+      />
+      <Text
+        className="text-[11px] font-bold"
+        style={{ color: powerStatusColor(status) }}
+      >
+        {powerStatusShortLabel(status)}
+      </Text>
+    </View>
+  );
+}
+
+function QuantityPicker({
+  value,
+  unit,
+  min,
+  max,
+  onChange,
+}: {
+  value: number;
+  unit: string;
+  min: number;
+  max: number;
+  onChange: (value: number) => void;
+}) {
+  const atMin = value <= min;
+  const atMax = value >= max;
+
+  return (
+    <View className="flex-row items-center rounded-2xl bg-muted p-1.5">
+      <Pressable
+        disabled={atMin}
+        onPress={() => onChange(Math.max(min, value - 1))}
+        android_ripple={null}
+        className={cn(
+          "h-11 w-11 items-center justify-center rounded-xl bg-card active:opacity-70",
+          atMin && "opacity-40",
+        )}
+      >
+        <Minus size={17} weight="bold" color={PH_COLORS.blue} />
+      </Pressable>
+
+      <View className="flex-1 flex-row items-baseline justify-center gap-1">
+        <Text className="text-xl font-bold text-foreground">{value}</Text>
+        <Text className="text-[13px] font-medium text-muted-foreground">
+          {unitLabel(unit)}
+        </Text>
+      </View>
+
+      <Pressable
+        disabled={atMax}
+        onPress={() => onChange(Math.min(max, value + 1))}
+        android_ripple={null}
+        className={cn(
+          "h-11 w-11 items-center justify-center rounded-xl bg-card active:opacity-70",
+          atMax && "opacity-40",
+        )}
+      >
+        <Plus size={17} weight="bold" color={PH_COLORS.blue} />
+      </Pressable>
+    </View>
+  );
+}
+
 export default function CitizenLocations() {
   const eligibility = useEligibility();
   const locations = useLocations();
@@ -98,9 +208,12 @@ export default function CitizenLocations() {
     quantity: number;
   } | null>(null);
 
-  const eligibleProgramIds = new Set(
-    (eligibility.data?.programs ?? []).map((p) => p.id),
-  );
+  const programs = eligibility.data?.programs ?? [];
+  const eligibleProgramIds = new Set(programs.map((p) => p.id));
+
+  function capFor(programId: number | undefined): number | undefined {
+    return programs.find((p) => p.id === programId)?.per_beneficiary_cap;
+  }
 
   function claimableItems(location: Location): Inventory[] {
     return (location.inventories ?? []).filter(
@@ -180,7 +293,8 @@ export default function CitizenLocations() {
           });
           dialog.alert({
             title: "Saved to your plan",
-            message: "Find it in the Saved tab. We'll remind you on your chosen day.",
+            message:
+              "Find it in the Saved tab. We'll remind you on your chosen day.",
           });
         },
         onError: (e) =>
@@ -199,279 +313,205 @@ export default function CitizenLocations() {
     onSave(target.locationId, target.commodityId, target.quantity, toYmd(date));
   }
 
+  function renderLocation({
+    loc,
+    items,
+  }: {
+    loc: Location;
+    items: Inventory[];
+  }) {
+    const isStore = loc.type === "kadiwa_store";
+    const accent = isStore ? PH_COLORS.blue : PH_COLORS.red;
+    const offline = loc.power_status === "offline";
+
+    return (
+      <View key={loc.id} className="gap-2.5 rounded-[26px] bg-muted p-2.5">
+        <View className="flex-row items-center gap-3 px-1.5 pt-1.5">
+          <View
+            className="h-11 w-11 items-center justify-center rounded-2xl"
+            style={{ backgroundColor: isStore ? "#e8effb" : "#fce8ea" }}
+          >
+            {isStore ? (
+              <Storefront size={22} color={accent} weight="duotone" />
+            ) : (
+              <GasPump size={22} color={accent} weight="duotone" />
+            )}
+          </View>
+          <View className="flex-1">
+            <Text className="text-[15px] font-bold text-foreground">
+              {loc.name}
+            </Text>
+            <Text className="text-xs text-muted-foreground">
+              {isStore ? "Kadiwa Store" : "Gas Station"}
+              {loc.barangay ? ` · ${loc.barangay}` : ""}
+            </Text>
+          </View>
+          <PowerPill status={loc.power_status} />
+        </View>
+
+        {offline ? (
+          <View
+            className="mx-1 rounded-2xl p-3"
+            style={{ backgroundColor: "#fce8ea" }}
+          >
+            <Text className="text-xs text-foreground">
+              No power here right now. Claiming is paused so you do not waste
+              the fare. Try another site below.
+            </Text>
+          </View>
+        ) : null}
+
+        {loc.power_status === "generator" ? (
+          <View
+            className="mx-1 rounded-2xl p-3"
+            style={{ backgroundColor: "#fdf1cf" }}
+          >
+            <Text className="text-xs text-foreground">
+              Running on a backup generator. Still open for claiming.
+            </Text>
+          </View>
+        ) : null}
+
+        {items.map((inv) => {
+          const available = Math.floor(Number(inv.quantity_available));
+          const unit = inv.commodity?.unit ?? "";
+          const cap = capFor(inv.commodity?.program_id);
+          const max = Math.max(1, Math.min(available, cap ?? available));
+          const key = `${loc.id}:${inv.commodity_id}`;
+          const value = Math.min(qty[key] ?? 1, max);
+          const claimingThis =
+            claim.isPending &&
+            claim.variables?.commodity_id === inv.commodity_id &&
+            claim.variables?.location_id === loc.id;
+          const savingThis =
+            saveReminder.isPending &&
+            saveReminder.variables?.commodity_id === inv.commodity_id &&
+            saveReminder.variables?.location_id === loc.id;
+
+          return (
+            <View
+              key={inv.commodity_id}
+              className="gap-3 rounded-[22px] bg-card p-4"
+            >
+              <View className="flex-row items-start justify-between gap-2">
+                <View className="flex-1">
+                  <Text className="text-base font-bold text-foreground">
+                    {inv.commodity?.name}
+                  </Text>
+                  <Text className="text-xs text-muted-foreground">
+                    {available} {unitLabel(unit)} in stock
+                    {cap !== undefined ? ` · your limit ${cap}` : ""}
+                  </Text>
+                </View>
+              </View>
+
+              <QuantityPicker
+                value={value}
+                unit={unit}
+                min={1}
+                max={max}
+                onChange={(v) => setQty((s) => ({ ...s, [key]: v }))}
+              />
+
+              <Button
+                variant="success"
+                label={
+                  offline ? "Unavailable during brownout" : `Claim ${value} ${unitLabel(unit)}`
+                }
+                disabled={offline}
+                loading={claimingThis}
+                onPress={() => onClaim(loc.id, inv.commodity_id, value)}
+              />
+
+              <Pressable
+                disabled={savingThis}
+                onPress={() =>
+                  setPending({
+                    locationId: loc.id,
+                    commodityId: inv.commodity_id,
+                    quantity: value,
+                  })
+                }
+                android_ripple={null}
+                className="active:opacity-60"
+              >
+                <Text className="text-center text-xs font-semibold text-primary">
+                  {savingThis ? "Saving..." : "Remind me instead"}
+                </Text>
+              </Pressable>
+            </View>
+          );
+        })}
+      </View>
+    );
+  }
+
   return (
     <Screen
-      edges={["top"]}
       refreshing={locations.isRefetching}
       onRefresh={() => locations.refetch()}
     >
-      <View className="gap-0.5">
-        <Text variant="title">Relief & Prices</Text>
-        <Text variant="subtitle">
-          Reserve your goods, or check current prices near you.
+      <View className="gap-0.5 pt-1">
+        <Text className="text-[28px] font-bold leading-tight text-foreground">
+          Relief
+        </Text>
+        <Text className="text-[13px] text-muted-foreground">
+          Reserve your goods, or check prices near you.
         </Text>
       </View>
 
       <GridAlertBanner />
 
-      <View className="flex-row gap-2">
-        {(["claim", "prices"] as Section[]).map((s) => {
-          const active = section === s;
-          return (
-            <Pressable
-              key={s}
-              onPress={() => setSection(s)}
-              className={cn(
-                "flex-1 items-center rounded-xl border py-2.5",
-                active
-                  ? "border-primary bg-primary"
-                  : "border-border bg-background",
-              )}
-            >
-              <Text
-                className={cn(
-                  "text-sm font-semibold",
-                  active ? "text-primary-foreground" : "text-foreground",
-                )}
-              >
-                {s === "claim" ? "Claim relief" : "Price Watch"}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <Segmented
+        value={section}
+        onChange={(next) => setSection(next)}
+        options={SECTIONS}
+      />
 
       {section === "prices" ? (
         <PriceList />
       ) : (
         <>
-          <View className="flex-row gap-2">
-            {(["available", "saved", "vouchers", "history"] as View2[]).map((v) => {
-          const active = view === v;
-          return (
-            <Pressable
-              key={v}
-              onPress={() => setView(v)}
-              className={cn(
-                "flex-1 items-center rounded-xl border py-2.5",
-                active
-                  ? "border-primary bg-primary"
-                  : "border-border bg-background",
-              )}
-            >
-              <Text
-                numberOfLines={1}
-                className={cn(
-                  "text-sm font-semibold",
-                  active ? "text-primary-foreground" : "text-foreground",
-                )}
-              >
-                {VIEW_LABELS[v]}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+          <ChipRow value={view} onChange={(next) => setView(next)} options={VIEWS} />
 
-      {view === "history" ? (
-        <ClaimHistory />
-      ) : view === "vouchers" ? (
-        <MyVouchers />
-      ) : view === "saved" ? (
-        <ClaimRemindersList onClaimed={() => setView("vouchers")} />
-      ) : (
-        <>
-          <Card className="gap-3 border-0 bg-secondary">
-            <View className="flex-row items-center gap-2">
-              <HandHeart size={22} color={PH_COLORS.blue} weight="fill" />
-              <Text variant="heading">How to claim</Text>
-            </View>
-            <Step num="1" text="Press the green Claim button below." />
-            <Step
-              num="2"
-              text="Show the code or QR from the Vouchers tab at the store."
-            />
-            <Step num="3" text="Get your goods. No lining up, no wasted fare." />
-          </Card>
+          {view === "history" ? <ClaimHistory /> : null}
+          {view === "vouchers" ? <MyVouchers /> : null}
+          {view === "saved" ? (
+            <ClaimRemindersList onClaimed={() => setView("vouchers")} />
+          ) : null}
 
-          {loading ? (
-            <View className="gap-3">
-              {[0, 1, 2].map((i) => (
-                <Skeleton key={i} className="h-40 w-full rounded-2xl" />
-              ))}
-            </View>
-          ) : locations.isError ? (
-            <Text className="text-destructive">
-              Couldn&apos;t load the stores.
-            </Text>
-          ) : visibleLocations.length === 0 ? (
-            <Card className="items-center gap-2 py-6">
-              <Text variant="caption" className="text-center">
-                There is nothing for you to claim right now. Please check back
-                later.
-              </Text>
-            </Card>
-          ) : (
+          {view === "available" ? (
             <>
-              {claimMarkers.length > 0 ? (
-                <LeafletMap markers={claimMarkers} />
-              ) : null}
-              {visibleLocations.map(({ loc, items }) => {
-              const isStore = loc.type === "kadiwa_store";
-              const accent = isStore ? PH_COLORS.blue : PH_COLORS.red;
-              const tint = isStore ? "#0038a814" : "#ce112614";
-              return (
-                <Card key={loc.id} className="gap-4">
-                  <View className="flex-row items-center gap-3">
-                    <View
-                      className="h-12 w-12 items-center justify-center rounded-2xl"
-                      style={{ backgroundColor: tint }}
-                    >
-                      {isStore ? (
-                        <Storefront size={24} color={accent} weight="duotone" />
-                      ) : (
-                        <GasPump size={24} color={accent} weight="duotone" />
-                      )}
-                    </View>
-                    <View className="flex-1">
-                      <Text variant="heading">{loc.name}</Text>
-                      <Text variant="caption">
-                        {(isStore ? "Kadiwa Store" : "Gas Station") +
-                          (loc.barangay ? ` · ${loc.barangay}` : "")}
-                      </Text>
-                    </View>
-                    <View className="flex-row items-center gap-1.5">
-                      <View
-                        className="h-2 w-2 rounded-full"
-                        style={{ backgroundColor: powerStatusColor(loc.power_status) }}
-                      />
-                      <Text
-                        className="text-xs font-semibold"
-                        style={{ color: powerStatusColor(loc.power_status) }}
-                      >
-                        {powerStatusShortLabel(loc.power_status)}
-                      </Text>
-                    </View>
-                  </View>
+              <HowToStrip />
 
-                  {loc.power_status === "offline" ? (
-                    <View className="rounded-xl bg-secondary p-3">
-                      <Text variant="caption">
-                        This service point has no power right now because of an
-                        interruption. Claiming is paused here. Pick another site
-                        below so you do not waste the fare.
-                      </Text>
+              {loading ? (
+                <View className="gap-3">
+                  {[0, 1].map((i) => (
+                    <Skeleton key={i} className="h-52 w-full rounded-[26px]" />
+                  ))}
+                </View>
+              ) : locations.isError ? (
+                <Text className="text-destructive">
+                  Couldn&apos;t load the stores.
+                </Text>
+              ) : visibleLocations.length === 0 ? (
+                <EmptyState
+                  icon={Basket}
+                  title="Nothing to claim yet"
+                  description="There is nothing available for you right now. Pull down to refresh, or check back later."
+                />
+              ) : (
+                <>
+                  {claimMarkers.length > 0 ? (
+                    <View className="overflow-hidden rounded-3xl">
+                      <LeafletMap markers={claimMarkers} />
                     </View>
                   ) : null}
-
-                  {loc.power_status === "generator" ? (
-                    <View className="rounded-xl bg-secondary p-3">
-                      <Text variant="caption">
-                        Running on backup generator during the brownout. Claiming
-                        is still open here.
-                      </Text>
-                    </View>
-                  ) : null}
-
-                  <View>
-                    {items.map((inv, idx) => {
-                      const available = Number(inv.quantity_available);
-                      const unit = inv.commodity?.unit ?? "";
-                      const key = `${loc.id}:${inv.commodity_id}`;
-                      const value = qty[key] ?? 1;
-                      const claimingThis =
-                        claim.isPending &&
-                        claim.variables?.commodity_id === inv.commodity_id &&
-                        claim.variables?.location_id === loc.id;
-                      const savingThis =
-                        saveReminder.isPending &&
-                        saveReminder.variables?.commodity_id ===
-                          inv.commodity_id &&
-                        saveReminder.variables?.location_id === loc.id;
-
-                      return (
-                        <View
-                          key={inv.commodity_id}
-                          className={cn(
-                            "gap-3",
-                            idx > 0 && "mt-4 border-t border-border pt-4",
-                          )}
-                        >
-                          <View className="flex-row items-start justify-between gap-2">
-                            <View className="flex-1">
-                              <Text variant="label" className="text-base">
-                                {inv.commodity?.name}
-                              </Text>
-                              <Text variant="caption">
-                                {available} {unitLabel(unit)} in stock
-                              </Text>
-                            </View>
-                            <View
-                              className="flex-row items-center gap-1 rounded-full px-2 py-1"
-                              style={{ backgroundColor: "#12805c14" }}
-                            >
-                              <CheckCircle
-                                size={14}
-                                color={PH_COLORS.success}
-                                weight="fill"
-                              />
-                              <Text
-                                className="text-xs font-semibold"
-                                style={{ color: PH_COLORS.success }}
-                              >
-                                Claimable
-                              </Text>
-                            </View>
-                          </View>
-
-                          <View className="flex-row items-center justify-between">
-                            <Text variant="caption">Quantity</Text>
-                            <Stepper
-                              value={value}
-                              onChange={(v) =>
-                                setQty((s) => ({ ...s, [key]: v }))
-                              }
-                              min={1}
-                              max={Math.floor(available)}
-                            />
-                          </View>
-
-                          <Button
-                            variant="success"
-                            label={
-                              loc.power_status === "offline"
-                                ? "Unavailable during brownout"
-                                : `Claim ${value} ${unitLabel(unit)}`
-                            }
-                            disabled={loc.power_status === "offline"}
-                            loading={claimingThis}
-                            onPress={() =>
-                              onClaim(loc.id, inv.commodity_id, value)
-                            }
-                          />
-                          <Button
-                            variant="outline"
-                            label="Remind me to claim this"
-                            loading={savingThis}
-                            onPress={() =>
-                              setPending({
-                                locationId: loc.id,
-                                commodityId: inv.commodity_id,
-                                quantity: value,
-                              })
-                            }
-                          />
-                        </View>
-                      );
-                    })}
-                  </View>
-                </Card>
-              );
-            })}
+                  {visibleLocations.map(renderLocation)}
+                </>
+              )}
             </>
-          )}
-        </>
-      )}
+          ) : null}
 
           {pending ? (
             <DateTimePicker

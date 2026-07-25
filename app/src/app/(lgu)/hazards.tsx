@@ -1,19 +1,37 @@
 import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
+import { Lightning, Warning } from "phosphor-react-native";
 
 import { useHazards } from "@/lib/queries/hazards";
 import { useInterruptions } from "@/lib/queries/energy";
-import { cn } from "@/lib/utils";
+import { PH_COLORS } from "@/lib/theme";
 import { Screen } from "@/components/ui/screen";
 import { Text } from "@/components/ui/text";
+import { Segmented, type SegmentedOption } from "@/components/ui/segmented";
 import { HazardsAdmin } from "@/components/hazards-admin";
 import { EnergyAdmin } from "@/components/energy-admin";
 
 type Section = "hazards" | "power";
 
-const SECTIONS: { key: Section; label: string }[] = [
-  { key: "hazards", label: "Hazards" },
-  { key: "power", label: "Power" },
+function segmentIconColor(active: boolean) {
+  return active ? PH_COLORS.white : PH_COLORS.mutedForeground;
+}
+
+const SECTIONS: SegmentedOption<Section>[] = [
+  {
+    key: "hazards",
+    label: "Hazards",
+    icon: (active) => (
+      <Warning size={17} color={segmentIconColor(active)} weight="fill" />
+    ),
+  },
+  {
+    key: "power",
+    label: "Power",
+    icon: (active) => (
+      <Lightning size={17} color={segmentIconColor(active)} weight="fill" />
+    ),
+  },
 ];
 
 export default function Risk() {
@@ -25,40 +43,23 @@ export default function Risk() {
 
   return (
     <Screen
-      edges={["top"]}
       refreshing={active.isRefetching}
       onRefresh={() => active.refetch()}
     >
-      <View className="gap-0.5">
-        <Text variant="title">Risk & Power</Text>
+      <View className="gap-0.5 pt-1">
+        <Text className="text-[28px] font-bold leading-tight text-foreground">
+          Risk &amp; Power
+        </Text>
+        <Text className="text-[13px] text-muted-foreground">
+          Report hazards and declare power interruptions.
+        </Text>
       </View>
 
-      <View className="flex-row gap-2">
-        {SECTIONS.map((s) => {
-          const isActive = section === s.key;
-          return (
-            <Pressable
-              key={s.key}
-              onPress={() => setSection(s.key)}
-              className={cn(
-                "flex-1 items-center rounded-xl border py-2.5",
-                isActive
-                  ? "border-primary bg-primary"
-                  : "border-border bg-background",
-              )}
-            >
-              <Text
-                className={cn(
-                  "text-sm font-semibold",
-                  isActive ? "text-primary-foreground" : "text-foreground",
-                )}
-              >
-                {s.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <Segmented
+        value={section}
+        onChange={(next) => setSection(next)}
+        options={SECTIONS}
+      />
 
       {section === "hazards" ? <HazardsAdmin /> : <EnergyAdmin />}
     </Screen>

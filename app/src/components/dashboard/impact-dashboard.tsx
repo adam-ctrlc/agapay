@@ -12,6 +12,7 @@ import { Text } from "@/components/ui/text";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BackBar } from "@/components/back-bar";
 import { Panel } from "@/components/dashboard/panel";
+import { ImpactStats } from "@/components/dashboard/impact-stats";
 import { PhilippinesHeatmap } from "@/components/heatmap/philippines-heatmap";
 import { MetricToggle } from "@/components/heatmap/metric-toggle";
 import { ProvinceDetail } from "@/components/heatmap/province-detail";
@@ -100,6 +101,15 @@ export function ImpactDashboard({ showBack = false }: { showBack?: boolean }) {
 
   const outageRows = outages.data ?? [];
 
+  const totals = rows.reduce(
+    (acc, row) => ({
+      affected: acc.affected + row.affected_people,
+      events: acc.events + row.event_count,
+      provinces: acc.provinces + (row.event_count > 0 ? 1 : 0),
+    }),
+    { affected: 0, events: 0, provinces: 0 },
+  );
+
   const values: Record<string, number> = {};
   let maxValue = metric === "severity" ? 100 : 1;
 
@@ -135,14 +145,23 @@ export function ImpactDashboard({ showBack = false }: { showBack?: boolean }) {
     >
       {showBack ? <BackBar /> : null}
 
-      <View className="gap-0.5">
-        <Text variant="title">Disaster Impact Map</Text>
-        <Text variant="subtitle">
+      <View className="gap-0.5 pt-1">
+        <Text className="text-[28px] font-bold leading-tight text-foreground">
+          Impact
+        </Text>
+        <Text className="text-[13px] text-muted-foreground">
           Live earthquakes, typhoons, and flooding across the Philippines.
         </Text>
       </View>
 
       <GridAlertBanner />
+
+      <ImpactStats
+        loading={impacts.isLoading}
+        affected={compact(totals.affected)}
+        events={String(totals.events)}
+        provinces={String(totals.provinces)}
+      />
 
       <MetricToggle value={metric} onChange={setMetric} />
 
@@ -153,14 +172,16 @@ export function ImpactDashboard({ showBack = false }: { showBack?: boolean }) {
       ) : impacts.isError ? (
         <Text className="text-destructive">Couldn&apos;t load the impact map.</Text>
       ) : (
-        <PhilippinesHeatmap
+        <View className="overflow-hidden rounded-3xl">
+          <PhilippinesHeatmap
           values={values}
           maxValue={maxValue}
           selectedCode={selected}
           onSelect={handleSelect}
           onInteractionChange={setLockScroll}
-          labelFor={labelFor}
-        />
+            labelFor={labelFor}
+          />
+        </View>
       )}
 
       <Text variant="caption">

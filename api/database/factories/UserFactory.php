@@ -27,7 +27,6 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'role' => UserRole::Citizen->value,
-            'phil_sys_id' => fake()->unique()->numerify('PSN-####-####-####'),
             'phone' => fake()->numerify('09#########'),
             'barangay_id' => null,
             'location_id' => null,
@@ -46,7 +45,6 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'role' => UserRole::Merchant->value,
-            'phil_sys_id' => null,
             'location_id' => Location::factory(),
         ]);
     }
@@ -55,7 +53,6 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'role' => UserRole::LguAdmin->value,
-            'phil_sys_id' => null,
         ]);
     }
 

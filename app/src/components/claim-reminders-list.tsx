@@ -1,10 +1,5 @@
 import { Pressable, View } from "react-native";
-import {
-  CalendarBlank,
-  GasPump,
-  Storefront,
-  Trash,
-} from "phosphor-react-native";
+import { BellRinging, CalendarBlank, GasPump, Storefront, Trash } from "phosphor-react-native";
 
 import { ApiError } from "@/lib/api/client";
 import type { ClaimReminder } from "@/lib/api/claim-reminders";
@@ -16,6 +11,7 @@ import { useCreateAllocation } from "@/lib/queries/allocations";
 import { unitLabel } from "@/lib/units";
 import { PH_COLORS } from "@/lib/theme";
 import { Text } from "@/components/ui/text";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Card } from "@/components/ui/card";
 import { useDialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -96,12 +92,11 @@ export function ClaimRemindersList({ onClaimed }: { onClaimed?: () => void }) {
 
   if (items.length === 0) {
     return (
-      <Card className="items-center gap-2 py-6">
-        <Text variant="caption" className="text-center">
-          No saved plans yet. On an available item, tap Remind me to save it
-          here.
-        </Text>
-      </Card>
+      <EmptyState
+        icon={BellRinging}
+        title="No saved plans"
+        description="On an available item, tap Remind me and it gets saved here so you do not miss the claiming window."
+      />
     );
   }
 

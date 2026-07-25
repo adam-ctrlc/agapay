@@ -24,10 +24,11 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
-        'phil_sys_id',
         'phone',
         'barangay_id',
         'location_id',
+        'approved_at',
+        'approved_by',
     ];
 
     protected $hidden = [
@@ -39,9 +40,25 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'approved_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
         ];
+    }
+
+    /**
+     * Only merchants are gated. They redeem real vouchers against real stock,
+     * so an LGU vouches for the store before that is possible. Citizens and
+     * admins are never held back.
+     */
+    public function needsApproval(): bool
+    {
+        return $this->role === UserRole::Merchant;
+    }
+
+    public function isApproved(): bool
+    {
+        return ! $this->needsApproval() || $this->approved_at !== null;
     }
 
     public function barangay(): BelongsTo

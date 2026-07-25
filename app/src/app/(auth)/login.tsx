@@ -1,14 +1,7 @@
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { Link, useRouter } from "expo-router";
-import {
-  At,
-  Basket,
-  Bus,
-  CaretRight,
-  GasPump,
-  Lock,
-} from "phosphor-react-native";
+import { At, CaretRight, Lock, MapTrifold, Tag } from "phosphor-react-native";
 
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/context";
@@ -18,8 +11,9 @@ import { Text } from "@/components/ui/text";
 import { Field } from "@/components/ui/field";
 import { IconInput } from "@/components/ui/icon-input";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { SectionLabel } from "@/components/ui/list-group";
 import { TextLink } from "@/components/ui/text-link";
+import { LogoTile } from "@/components/brand/logo-tile";
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -45,11 +39,7 @@ export default function Login() {
   return (
     <Screen>
       <View className="mt-8 items-center gap-3">
-        <View className="h-20 w-20 items-center justify-center rounded-3xl bg-primary">
-          <Text className="text-3xl font-extrabold text-primary-foreground">
-            AL
-          </Text>
-        </View>
+        <LogoTile size={84} radius={26} mark={56} />
         <View className="items-center gap-0.5">
           <Text variant="title">AyudaLock</Text>
           <Text variant="subtitle" className="text-center">
@@ -87,7 +77,12 @@ export default function Login() {
           />
         </Field>
 
-        <Button label="Sign in" onPress={onSubmit} loading={loading} />
+        <Button
+          label="Sign in"
+          onPress={onSubmit}
+          loading={loading}
+          disabled={!identifier.trim() || !password}
+        />
 
         <View className="flex-row items-center justify-center gap-1">
           <Text variant="caption">New to AyudaLock?</Text>
@@ -95,22 +90,54 @@ export default function Login() {
         </View>
       </View>
 
-      <Link href="/(auth)/prices" asChild>
-        <Pressable className="mt-3 active:opacity-80">
-          <Card className="flex-row items-center gap-3">
-            <View className="flex-row gap-1.5">
-              <GasPump size={24} color={PH_COLORS.blue} weight="duotone" />
-              <Bus size={24} color={PH_COLORS.red} weight="duotone" />
-              <Basket size={24} color={PH_COLORS.success} weight="duotone" />
+      <SectionLabel>No account needed</SectionLabel>
+      <View className="overflow-hidden rounded-3xl border border-border bg-card">
+        <Link href="/(auth)/prices" asChild>
+          <Pressable
+            android_ripple={null}
+            className="flex-row items-center gap-3 border-b border-border px-4 py-3.5 active:opacity-70"
+          >
+            <View
+              className="h-10 w-10 items-center justify-center rounded-2xl"
+              style={{ backgroundColor: "#fdf1cf" }}
+            >
+              <Tag size={20} color="#8a6800" weight="duotone" />
             </View>
             <View className="flex-1">
-              <Text variant="label">View current PH prices</Text>
-              <Text variant="caption">Fuel, fare, and market prices today</Text>
+              <Text className="text-[15px] font-semibold text-foreground">
+                Price Watch
+              </Text>
+              <Text className="text-[12px] text-muted-foreground">
+                Fuel, fare, and market prices today
+              </Text>
             </View>
-            <CaretRight size={18} color={PH_COLORS.mutedForeground} />
-          </Card>
-        </Pressable>
-      </Link>
+            <CaretRight size={16} color={PH_COLORS.mutedForeground} />
+          </Pressable>
+        </Link>
+
+        <Link href="/(auth)/impact" asChild>
+          <Pressable
+            android_ripple={null}
+            className="flex-row items-center gap-3 px-4 py-3.5 active:opacity-70"
+          >
+            <View
+              className="h-10 w-10 items-center justify-center rounded-2xl"
+              style={{ backgroundColor: "#fce8ea" }}
+            >
+              <MapTrifold size={20} color={PH_COLORS.red} weight="duotone" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-[15px] font-semibold text-foreground">
+                Impact map
+              </Text>
+              <Text className="text-[12px] text-muted-foreground">
+                Live hazards, rainfall, and brownouts by province
+              </Text>
+            </View>
+            <CaretRight size={16} color={PH_COLORS.mutedForeground} />
+          </Pressable>
+        </Link>
+      </View>
     </Screen>
   );
 }

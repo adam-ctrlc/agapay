@@ -14,7 +14,8 @@ import { cn } from "@/lib/utils";
 import { PH_COLORS } from "@/lib/theme";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Group } from "@/components/ui/list-group";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useDialog } from "@/components/ui/dialog";
 import { IconInput } from "@/components/ui/icon-input";
 import { Input } from "@/components/ui/input";
@@ -36,14 +37,15 @@ function Chip({
   return (
     <Pressable
       onPress={onPress}
+      android_ripple={null}
       className={cn(
-        "rounded-full border px-3 py-1.5 active:opacity-70",
-        active ? "border-primary bg-primary" : "border-border bg-card",
+        "rounded-full px-4 py-2 active:opacity-70",
+        active ? "bg-primary" : "bg-muted",
       )}
     >
       <Text
         className={cn(
-          "text-xs font-medium",
+          "text-[13px] font-semibold",
           active ? "text-primary-foreground" : "text-muted-foreground",
         )}
       >
@@ -129,6 +131,7 @@ function WeatherOverrideRow({ province }: { province: ProvinceWeather }) {
           variant="secondary"
           label="Save"
           loading={override.isPending}
+          disabled={!rain.trim() || !note.trim()}
           onPress={submit}
         />
         <Button
@@ -174,7 +177,6 @@ export function WeatherList() {
 
   const pending = query.isLoading || query.isPlaceholderData;
   const lastPage = meta?.last_page ?? 1;
-  const skeletonCount = Math.min(PER_PAGE, Math.max(rows.length, 3));
 
   return (
     <View className="gap-3">
@@ -203,46 +205,64 @@ export function WeatherList() {
       </View>
 
       {pending ? (
-        Array.from({ length: skeletonCount }).map((_, i) => (
-          <Skeleton key={i} className="h-[62px] w-full rounded-2xl" />
-        ))
+        <Skeleton className="h-64 w-full rounded-3xl" />
       ) : rows.length === 0 ? (
-        <Card>
-          <Text variant="caption">No provinces match your search.</Text>
-        </Card>
+        <EmptyState
+          icon={MagnifyingGlass}
+          title="No matches"
+          description="No province matches that name. Try a different spelling or clear the filter."
+          tint={PH_COLORS.white}
+          color={PH_COLORS.mutedForeground}
+        />
       ) : (
-        rows.map((w) => (
-          <Card key={w.code} className="gap-2">
-            <View className="flex-row items-center gap-3">
-              <View
-                className="h-2.5 w-2.5 rounded-full"
-                style={{
-                  backgroundColor: colorForRatio((w.precipitation ?? 0) / maxPrecip),
-                }}
-              />
-              <View className="flex-1">
-                <Text variant="label">{w.name ?? w.code}</Text>
-                <Text variant="caption">
-                  {w.description ?? "—"}
-                  {w.temperature != null ? ` · ${Math.round(w.temperature)}°C` : ""}
-                  {(w.precipitation ?? 0) > 0 ? ` · ${w.precipitation}mm rain` : ""}
-                  {w.wind_speed != null ? ` · ${Math.round(w.wind_speed)} km/h` : ""}
-                </Text>
+        <Group>
+          {rows.map((w, index) => (
+            <View
+              key={w.code}
+              className={cn(
+                "gap-2 px-4 py-3.5",
+                index !== rows.length - 1 && "border-b border-border",
+              )}
+            >
+              <View className="flex-row items-center gap-3">
+                <View
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{
+                    backgroundColor: colorForRatio(
+                      (w.precipitation ?? 0) / maxPrecip,
+                    ),
+                  }}
+                />
+                <View className="flex-1">
+                  <Text className="text-[15px] font-semibold text-foreground">
+                    {w.name ?? w.code}
+                  </Text>
+                  <Text className="text-[12px] text-muted-foreground">
+                    {w.description ?? "—"}
+                    {w.temperature != null
+                      ? ` · ${Math.round(w.temperature)}°C`
+                      : ""}
+                    {(w.precipitation ?? 0) > 0
+                      ? ` · ${w.precipitation}mm rain`
+                      : ""}
+                    {w.wind_speed != null
+                      ? ` · ${Math.round(w.wind_speed)} km/h`
+                      : ""}
+                  </Text>
+                </View>
+                {w.is_live ? null : <Badge variant="accent" label="manual" />}
               </View>
-              {w.is_live ? null : <Badge variant="accent" label="manual" />}
+
+              {w.is_live ? null : (
+                <Text className="text-[12px] text-muted-foreground">
+                  Set by the LGU, not a live reading{w.note ? `: ${w.note}` : "."}
+                </Text>
+              )}
+
+              {isAdmin ? <WeatherOverrideRow province={w} /> : null}
             </View>
-
-            {w.is_live ? null : (
-              <Text variant="caption" className="text-muted-foreground">
-                Set by the LGU, not a live reading{w.note ? `: ${w.note}` : "."}
-              </Text>
-            )}
-
-            {isAdmin ? (
-              <WeatherOverrideRow province={w} />
-            ) : null}
-          </Card>
-        ))
+          ))}
+        </Group>
       )}
 
       {lastPage > 1 ? (
@@ -250,27 +270,33 @@ export function WeatherList() {
           <Pressable
             disabled={page <= 1}
             onPress={() => setPage((p) => Math.max(1, p - 1))}
+            android_ripple={null}
             className={cn(
-              "flex-row items-center gap-1 rounded-lg border border-border px-3 py-2 active:opacity-70",
+              "flex-row items-center gap-1 rounded-full bg-muted px-4 py-2 active:opacity-70",
               page <= 1 && "opacity-40",
             )}
           >
-            <CaretLeft size={16} color={PH_COLORS.foreground} />
-            <Text variant="label">Prev</Text>
+            <CaretLeft size={15} color={PH_COLORS.foreground} weight="bold" />
+            <Text className="text-[13px] font-semibold text-foreground">
+              Prev
+            </Text>
           </Pressable>
-          <Text variant="caption">
+          <Text className="text-[12px] font-medium text-muted-foreground">
             Page {page} of {lastPage}
           </Text>
           <Pressable
             disabled={page >= lastPage}
             onPress={() => setPage((p) => Math.min(lastPage, p + 1))}
+            android_ripple={null}
             className={cn(
-              "flex-row items-center gap-1 rounded-lg border border-border px-3 py-2 active:opacity-70",
+              "flex-row items-center gap-1 rounded-full bg-muted px-4 py-2 active:opacity-70",
               page >= lastPage && "opacity-40",
             )}
           >
-            <Text variant="label">Next</Text>
-            <CaretRight size={16} color={PH_COLORS.foreground} />
+            <Text className="text-[13px] font-semibold text-foreground">
+              Next
+            </Text>
+            <CaretRight size={15} color={PH_COLORS.foreground} weight="bold" />
           </Pressable>
         </View>
       ) : null}

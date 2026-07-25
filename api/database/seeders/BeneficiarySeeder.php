@@ -5,16 +5,19 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Models\Beneficiary;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 final class BeneficiarySeeder extends Seeder
 {
     public function run(): void
     {
-        Beneficiary::query()->firstOrCreate(
-            ['phil_sys_id' => 'PSN-0001-0001-0001'],
+        $citizen = User::query()->where('email', 'citizen@ayudalock.test')->first();
+
+        Beneficiary::query()->updateOrCreate(
+            ['dswd_id' => 'DSWD-000001'],
             [
-                'dswd_id' => 'DSWD-000001',
+                'user_id' => $citizen?->getKey(),
                 'household_number' => 'HH-00001',
                 'full_name' => 'Maria Santos',
                 'barangay' => 'Barangay 176',

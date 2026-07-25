@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createGuide,
   deleteGuide,
+  updateGuide,
+  type GuideInput,
   getGuide,
   listGuides,
   type GuideCategory,
@@ -28,6 +30,15 @@ export function useCreateGuide() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: createGuide,
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.guides }),
+  });
+}
+
+export function useUpdateGuide() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { id: number; body: GuideInput }) =>
+      updateGuide(args.id, args.body),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.guides }),
   });
 }

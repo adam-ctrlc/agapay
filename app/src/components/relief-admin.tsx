@@ -146,6 +146,7 @@ function RestockRow({
           variant="secondary"
           label="Set stock"
           loading={restock.isPending}
+          disabled={commodityId === null || !amount.trim()}
           onPress={submit}
         />
       </View>
@@ -302,6 +303,7 @@ export function ReliefAdmin() {
                   variant="secondary"
                   label="Save cap"
                   loading={updateProgram.isPending}
+                  disabled={!(caps[program.id] ?? "").trim()}
                   onPress={() => saveCap(program.id, program.unit)}
                 />
               </View>
@@ -367,6 +369,7 @@ export function ReliefAdmin() {
         <Button
           label="Add service point"
           loading={create.isPending}
+          disabled={!name.trim() || barangayId === null}
           onPress={submitLocation}
         />
       </Card>

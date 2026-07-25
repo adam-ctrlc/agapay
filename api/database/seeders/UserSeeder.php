@@ -16,6 +16,7 @@ final class UserSeeder extends Seeder
     public function run(): void
     {
         $kadiwa = Location::query()->where('type', LocationType::KadiwaStore->value)->first();
+        $station = Location::query()->where('type', LocationType::GasStation->value)->first();
 
         User::query()->firstOrCreate(
             ['email' => 'citizen@ayudalock.test'],
@@ -27,7 +28,6 @@ final class UserSeeder extends Seeder
                 'username' => 'maria',
                 'password' => Hash::make('password'),
                 'role' => UserRole::Citizen->value,
-                'phil_sys_id' => 'PSN-0001-0001-0001',
                 'phone' => '09170000001',
             ],
         );
@@ -42,7 +42,6 @@ final class UserSeeder extends Seeder
                 'username' => 'jose',
                 'password' => Hash::make('password'),
                 'role' => UserRole::Citizen->value,
-                'phil_sys_id' => 'PSN-0002-0002-0002',
                 'phone' => '09170000002',
             ],
         );
@@ -58,6 +57,26 @@ final class UserSeeder extends Seeder
                 'role' => UserRole::Merchant->value,
                 'phone' => '09170000003',
                 'location_id' => $kadiwa?->id,
+                'approved_at' => now(),
+            ],
+        );
+
+        /**
+         * Deliberately left unapproved so the LGU approval queue has something
+         * real to act on straight after seeding.
+         */
+        User::query()->firstOrCreate(
+            ['email' => 'pending@ayudalock.test'],
+            [
+                'name' => 'Nena Bautista',
+                'first_name' => 'Nena',
+                'last_name' => 'Bautista',
+                'username' => 'nena',
+                'password' => Hash::make('password'),
+                'role' => UserRole::Merchant->value,
+                'phone' => '09170000005',
+                'location_id' => $station?->id,
+                'approved_at' => null,
             ],
         );
 

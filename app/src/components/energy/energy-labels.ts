@@ -45,6 +45,17 @@ export function powerStatusShortLabel(status: PowerStatus | null | undefined): s
   }
 }
 
+export function powerStatusTint(status: PowerStatus | null | undefined): string {
+  switch (status) {
+    case "offline":
+      return "#fce8ea";
+    case "generator":
+      return "#fdf1cf";
+    default:
+      return "#e1f3ec";
+  }
+}
+
 export function powerStatusColor(status: PowerStatus | null | undefined): string {
   switch (status) {
     case "offline":

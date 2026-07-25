@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { ChatCircleDots } from "phosphor-react-native";
 import { Pressable, View } from "react-native";
 
 import { ApiError } from "@/lib/api/client";
 import type { AnnouncementComment } from "@/lib/api/announcements";
 import { useAddComment, useComments } from "@/lib/queries/announcements";
 import { Text } from "@/components/ui/text";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useDialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -86,7 +88,12 @@ export function CommentsSection({ announcementId }: { announcementId: number }) 
       {comments.isLoading ? (
         <Skeleton className="h-10 w-full rounded-xl" />
       ) : (comments.data ?? []).length === 0 ? (
-        <Text variant="caption">No comments yet. Be the first.</Text>
+        <EmptyState
+          icon={ChatCircleDots}
+          title="No comments yet"
+          description="Be the first to say something."
+          compact
+        />
       ) : (
         comments.data?.map((c) => (
           <View key={c.id} className="gap-2">
@@ -114,6 +121,7 @@ export function CommentsSection({ announcementId }: { announcementId: number }) 
                 <Button
                   size="sm"
                   label="Reply"
+                  disabled={!replyText.trim()}
                   loading={add.isPending}
                   onPress={() => submitReply(c.id)}
                 />
@@ -133,6 +141,7 @@ export function CommentsSection({ announcementId }: { announcementId: number }) 
         <Button
           size="sm"
           label="Send"
+          disabled={!text.trim()}
           loading={add.isPending}
           onPress={submitTop}
         />

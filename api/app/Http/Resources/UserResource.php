@@ -27,10 +27,17 @@ final class UserResource extends JsonResource
             'username' => $this->username,
             'email' => $this->email,
             'role' => $this->role->value,
-            'phil_sys_id' => $this->phil_sys_id,
             'phone' => $this->phone,
             'barangay_id' => $this->barangay_id,
             'location_id' => $this->location_id,
+            'location' => $this->whenLoaded('location', fn () => [
+                'id' => $this->location?->id,
+                'name' => $this->location?->name,
+                'type' => $this->location?->type?->value,
+            ]),
+            'needs_approval' => $this->needsApproval(),
+            'is_approved' => $this->isApproved(),
+            'approved_at' => $this->approved_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

@@ -21,6 +21,20 @@ enum ReportStatus: string
         };
     }
 
+    /**
+     * What the reporter is told when the status moves. Describes the review
+     * decision only, never an agency response this system cannot observe.
+     */
+    public function reporterMessage(): string
+    {
+        return match ($this) {
+            self::Submitted => 'Reopened for review by your LGU.',
+            self::Verified => 'Your LGU verified this report.',
+            self::Dismissed => 'Your LGU reviewed this and did not take it forward.',
+            self::Resolved => 'Your LGU marked this resolved.',
+        };
+    }
+
     public function isOpen(): bool
     {
         return match ($this) {

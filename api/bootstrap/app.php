@@ -2,6 +2,7 @@
 
 use App\Exceptions\DomainException;
 use App\Http\Middleware\CacheAtEdge;
+use App\Http\Middleware\EnsureApproved;
 use App\Http\Middleware\EnsureRole;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'role' => EnsureRole::class,
+            'approved' => EnsureApproved::class,
             'cache.edge' => CacheAtEdge::class,
         ]);
 

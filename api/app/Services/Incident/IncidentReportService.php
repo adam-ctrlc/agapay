@@ -9,6 +9,7 @@ use App\Exceptions\DomainException;
 use App\Models\HazardEvent;
 use App\Models\IncidentReport;
 use App\Models\User;
+use App\Models\UserNotification;
 use App\Services\Hazard\ProvinceLocator;
 use Illuminate\Support\Facades\DB;
 
@@ -84,11 +85,32 @@ final class IncidentReportService
      */
     public function review(IncidentReport $report, User $admin, array $data): IncidentReport
     {
+        $before = $report->status;
+
         $report->fill($data);
         $report->reviewed_by = $admin->getKey();
         $report->reviewed_at = now();
         $report->save();
 
+        if ($report->status !== $before) {
+            $this->notifyReporter($report);
+        }
+
         return $report->load(['referrals.team', 'province', 'barangay']);
+    }
+
+    /**
+     * The reporter follows these steps in their account, so a status they can
+     * see change has to reach them the same way a referral step does.
+     */
+    private function notifyReporter(IncidentReport $report): void
+    {
+        UserNotification::query()->create([
+            'user_id' => $report->user_id,
+            'type' => 'incident_report',
+            'title' => $report->status->label(),
+            'body' => "{$report->title}: {$report->status->reporterMessage()}",
+            'data' => ['incident_report_id' => $report->getKey()],
+        ]);
     }
 }

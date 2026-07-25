@@ -5,8 +5,7 @@ import {
   useAllocations,
   useReleaseAllocation,
 } from "@/lib/queries/allocations";
-import { PH_COLORS } from "@/lib/theme";
-import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Text } from "@/components/ui/text";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { VoucherCard } from "@/components/voucher-card";
@@ -34,12 +33,11 @@ export function MyVouchers() {
 
   if (active.length === 0) {
     return (
-      <Card className="items-center gap-2 py-6">
-        <Ticket size={28} color={PH_COLORS.mutedForeground} weight="duotone" />
-        <Text variant="caption" className="text-center">
-          No active vouchers. Reserve goods from the Available tab.
-        </Text>
-      </Card>
+      <EmptyState
+        icon={Ticket}
+        title="No active vouchers"
+        description="Reserve goods from the Available tab and your QR code shows up here."
+      />
     );
   }
 

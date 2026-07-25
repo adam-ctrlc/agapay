@@ -40,7 +40,7 @@ final class AllocationTest extends TestCase
     {
         $scenario = $this->makeFoodScenario();
 
-        $stranger = User::factory()->citizen()->create(['phil_sys_id' => 'PSN-NONE']);
+        $stranger = User::factory()->citizen()->create();
 
         $this->withAuth($stranger)->postJson('/api/allocations', [
             'location_id' => $scenario['location']->id,
@@ -81,11 +81,10 @@ final class AllocationTest extends TestCase
     {
         $scenario = $this->makeFoodScenario(['stock' => 5, 'cap' => 5]);
 
-        Beneficiary::factory()->create(['phil_sys_id' => 'PSN-SECOND', 'is_active' => true]);
         $second = User::factory()->citizen()->create([
-            'phil_sys_id' => 'PSN-SECOND',
             'barangay_id' => $scenario['barangay']->id,
         ]);
+        Beneficiary::factory()->create(['user_id' => $second->id, 'is_active' => true]);
 
         $this->withAuth($scenario['citizen'])->postJson('/api/allocations', [
             'location_id' => $scenario['location']->id,

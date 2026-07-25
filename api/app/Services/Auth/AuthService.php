@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Auth;
 
+use App\Enums\UserRole;
 use App\Exceptions\DomainException;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -35,10 +36,10 @@ final class AuthService
             'email' => $data['email'],
             'password' => $data['password'],
             'role' => $data['role'],
-            'phil_sys_id' => $data['phil_sys_id'] ?? null,
             'phone' => $data['phone'] ?? null,
             'barangay_id' => $data['barangay_id'] ?? null,
             'location_id' => $data['location_id'] ?? null,
+            'approved_at' => $data['role'] === UserRole::Merchant->value ? null : now(),
         ]);
 
         return [

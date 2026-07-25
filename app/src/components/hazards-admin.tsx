@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
-import { Trash } from "phosphor-react-native";
+import { PencilSimple, Trash, Warning } from "phosphor-react-native";
 
 import { ApiError } from "@/lib/api/client";
-import type { HazardType } from "@/lib/api/hazards";
+import type { HazardEvent, HazardType } from "@/lib/api/hazards";
 import {
   useCreateHazard,
+  useUpdateHazard,
   useDeleteHazard,
   useHazards,
 } from "@/lib/queries/hazards";
@@ -13,12 +14,14 @@ import { PH_PROVINCES } from "@/lib/geo/ph-provinces";
 import { cn } from "@/lib/utils";
 import { PH_COLORS } from "@/lib/theme";
 import { Text } from "@/components/ui/text";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDialog } from "@/components/ui/dialog";
+import { useScreenScroll } from "@/components/ui/screen";
 import { colorForRatio } from "@/components/heatmap/severity-scale";
 import { hazardLabel, hazardWhen } from "@/components/heatmap/hazard-labels";
 
@@ -33,8 +36,10 @@ const TYPES: { key: HazardType; label: string }[] = [
 export function HazardsAdmin() {
   const hazards = useHazards();
   const create = useCreateHazard();
+  const update = useUpdateHazard();
   const remove = useDeleteHazard();
   const dialog = useDialog();
+  const { scrollToTop } = useScreenScroll();
 
   const [type, setType] = useState<HazardType>("typhoon");
   const [title, setTitle] = useState("");
@@ -43,6 +48,7 @@ export function HazardsAdmin() {
   const [provinceQuery, setProvinceQuery] = useState("");
   const [affected, setAffected] = useState("");
   const [severity, setSeverity] = useState("50");
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const matches = useMemo(() => {
     const q = provinceQuery.trim().toLowerCase();
@@ -55,7 +61,22 @@ export function HazardsAdmin() {
 
   const provinceName = PH_PROVINCES.find((p) => p.code === provinceCode)?.title;
 
+  function startEdit(hazard: HazardEvent) {
+    setEditingId(hazard.id);
+    setType(hazard.type);
+    setTitle(hazard.title);
+    setPlace(hazard.place ?? "");
+    setProvinceCode(hazard.province_code ?? null);
+    setProvinceQuery("");
+    setAffected(
+      hazard.affected_people != null ? String(hazard.affected_people) : "",
+    );
+    setSeverity(String(hazard.severity));
+    scrollToTop();
+  }
+
   function reset() {
+    setEditingId(null);
     setType("typhoon");
     setTitle("");
     setPlace("");
@@ -75,6 +96,36 @@ export function HazardsAdmin() {
       dialog.alert("Severity must be a number from 0 to 100.");
       return;
     }
+    const body = {
+      type,
+      title: title.trim(),
+      place: place.trim() || provinceName || null,
+      province_code: provinceCode,
+      affected_people: affected.trim() ? Number(affected) : null,
+      severity: Math.round(sev),
+    };
+
+    if (editingId !== null) {
+      update.mutate(
+        { id: editingId, body },
+        {
+          onSuccess: () => {
+            reset();
+            dialog.alert({
+              title: "Updated",
+              message: "The hazard has been changed.",
+            });
+          },
+          onError: (e) =>
+            dialog.alert({
+              title: "Could not update",
+              message: e instanceof ApiError ? e.message : "Please try again.",
+            }),
+        },
+      );
+      return;
+    }
+
     create.mutate(
       {
         type,
@@ -120,7 +171,7 @@ export function HazardsAdmin() {
 
       <Card>
         <CardHeader>
-          <CardTitle>New hazard</CardTitle>
+          <CardTitle>{editingId === null ? "New hazard" : "Edit hazard"}</CardTitle>
         </CardHeader>
         <View className="gap-3">
           <Field label="Type">
@@ -214,10 +265,14 @@ export function HazardsAdmin() {
           </Field>
 
           <Button
-            label="Publish hazard"
-            loading={create.isPending}
+            label={editingId === null ? "Publish hazard" : "Save changes"}
+            loading={create.isPending || update.isPending}
+            disabled={!title.trim() || !provinceCode || !severity.trim()}
             onPress={post}
           />
+          {editingId !== null ? (
+            <Button variant="outline" label="Cancel edit" onPress={reset} />
+          ) : null}
         </View>
       </Card>
 
@@ -229,9 +284,12 @@ export function HazardsAdmin() {
           ))}
         </View>
       ) : (hazards.data ?? []).length === 0 ? (
-        <Card>
-          <Text variant="caption">No hazards reported yet.</Text>
-        </Card>
+        <EmptyState
+          icon={Warning}
+          title="No hazards yet"
+          description="Publish one above and it shades the public impact map straight away."
+          compact
+        />
       ) : (
         <View className="gap-3">
           {hazards.data?.map((hazard) => (
@@ -251,13 +309,22 @@ export function HazardsAdmin() {
                 </Text>
               </View>
               {hazard.source !== "usgs" ? (
-                <Pressable
-                  onPress={() => confirmDelete(hazard.id, hazard.title)}
-                  hitSlop={8}
-                  className="active:opacity-60"
-                >
-                  <Trash size={18} color={PH_COLORS.red} />
-                </Pressable>
+                <View className="flex-row items-center gap-3">
+                  <Pressable
+                    onPress={() => startEdit(hazard)}
+                    hitSlop={8}
+                    className="active:opacity-60"
+                  >
+                    <PencilSimple size={18} color={PH_COLORS.blue} />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => confirmDelete(hazard.id, hazard.title)}
+                    hitSlop={8}
+                    className="active:opacity-60"
+                  >
+                    <Trash size={18} color={PH_COLORS.red} />
+                  </Pressable>
+                </View>
               ) : null}
             </Card>
           ))}

@@ -67,6 +67,14 @@ export async function createGuide(body: GuideInput) {
   return res.data;
 }
 
+export async function updateGuide(id: number, body: GuideInput) {
+  const res = await apiRequest<{ data: ServiceGuide }>(`/guides/${id}`, {
+    method: "PUT",
+    body,
+  });
+  return res.data;
+}
+
 export function deleteGuide(id: number) {
   return apiRequest<{ message: string }>(`/guides/${id}`, {
     method: "DELETE",

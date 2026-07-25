@@ -13,7 +13,6 @@ return new class extends Migration
         Schema::create('blocked_claims', function (Blueprint $table): void {
             $table->id();
             $table->string('reason')->index();
-            $table->string('phil_sys_id')->nullable()->index();
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('program_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('location_id')->nullable()->constrained()->nullOnDelete();

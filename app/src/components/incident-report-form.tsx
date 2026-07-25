@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Image, Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Camera, Crosshair, MapPin, Trash } from "phosphor-react-native";
+import { Crosshair, MapPin, Trash } from "phosphor-react-native";
 
 import { ApiError } from "@/lib/api/client";
 import type { IncidentType, LocationSource } from "@/lib/api/incident-reports";
@@ -9,19 +9,25 @@ import { useCreateIncidentReport } from "@/lib/queries/incident-reports";
 import { useDeviceLocation } from "@/lib/use-device-location";
 import { captureIncidentPhoto, pickIncidentPhoto } from "@/lib/incident-photo";
 import { PH_PROVINCES } from "@/lib/geo/ph-provinces";
-import { latLngToSvg } from "@/lib/geo/svg-to-latlng";
+import { PROVINCE_ANCHORS } from "@/lib/geo/province-anchors";
+import { latLngToSvg, svgToLatLng } from "@/lib/geo/svg-to-latlng";
 import { provinceAt } from "@/lib/geo/point-in-province";
-import { cn } from "@/lib/utils";
+import {
+  ISLAND_GROUP_LABEL,
+  islandGroupFor,
+} from "@/lib/geo/island-groups";
 import { PH_COLORS } from "@/lib/theme";
 import { Text } from "@/components/ui/text";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useDialog } from "@/components/ui/dialog";
+import { ChipRow, type SegmentedOption } from "@/components/ui/segmented";
+import { SectionLabel } from "@/components/ui/list-group";
+import { LocationMap, type MapPoint } from "@/components/reports/location-map";
 
-const TYPES: { key: IncidentType; label: string }[] = [
+const TYPE_OPTIONS: SegmentedOption<IncidentType>[] = [
   { key: "flood", label: "Flooding" },
   { key: "fire", label: "Fire" },
   { key: "landslide", label: "Landslide" },
@@ -34,35 +40,6 @@ const TYPES: { key: IncidentType; label: string }[] = [
   { key: "other", label: "Other" },
 ];
 
-function Chip({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      className={cn(
-        "rounded-full px-3 py-1.5",
-        active ? "bg-primary" : "bg-muted",
-      )}
-    >
-      <Text
-        className={cn(
-          "text-sm font-medium",
-          active ? "text-primary-foreground" : "text-muted-foreground",
-        )}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 export function IncidentReportForm() {
   const router = useRouter();
   const create = useCreateIncidentReport();
@@ -74,37 +51,84 @@ export function IncidentReportForm() {
   const [description, setDescription] = useState("");
   const [provinceCode, setProvinceCode] = useState<string | null>(null);
   const [provinceQuery, setProvinceQuery] = useState("");
+  const [point, setPoint] = useState<MapPoint | null>(null);
+  const [source, setSource] = useState<LocationSource>("manual_province");
   const [photo, setPhoto] = useState<string | null>(null);
   const [busyPhoto, setBusyPhoto] = useState(false);
 
-  const provinceName = PH_PROVINCES.find((p) => p.code === provinceCode)?.title;
-
-  const matches = provinceQuery.trim()
-    ? PH_PROVINCES.filter((p) =>
-        p.title.toLowerCase().includes(provinceQuery.trim().toLowerCase()),
-      ).slice(0, 6)
-    : [];
-
   const fix = location.state.status === "granted" ? location.state.fix : null;
+  const provinceName = PH_PROVINCES.find((p) => p.code === provinceCode)?.title;
+  const group = islandGroupFor(provinceCode);
 
-  function locationSource(): LocationSource {
-    switch (true) {
-      case fix !== null:
-        return "gps";
-      default:
-        return "manual_province";
-    }
-  }
+  const matches = useMemo(() => {
+    const q = provinceQuery.trim().toLowerCase();
+    if (!q) return [];
+    return PH_PROVINCES.filter((p) => p.title.toLowerCase().includes(q)).slice(
+      0,
+      6,
+    );
+  }, [provinceQuery]);
 
   async function useMyLocation() {
     const found = await location.locate();
 
     if (found === null) return;
 
-    const point = latLngToSvg(found.latitude, found.longitude);
-    const guess = provinceAt(point.x, point.y);
+    const next = latLngToSvg(found.latitude, found.longitude);
 
+    setPoint(next);
+    setSource("gps");
+
+    const guess = provinceAt(next.x, next.y);
     if (guess !== null) setProvinceCode(guess.code);
+  }
+
+  function pickProvince(code: string) {
+    setProvinceCode(code);
+    setProvinceQuery("");
+
+    /**
+     * Anchors the pin so the map has something to show, but the report still
+     * goes out with no coordinates. A province centroid is not a location the
+     * reporter chose, and sending it would fake a precision they never gave.
+     */
+    if (source !== "gps" && source !== "manual_map") {
+      setPoint(PROVINCE_ANCHORS[code] ?? null);
+    }
+  }
+
+  function pickOnMap(next: MapPoint, code: string | null) {
+    setPoint(next);
+    setSource("manual_map");
+    if (code !== null) setProvinceCode(code);
+  }
+
+  function clearLocation() {
+    location.reset();
+    setPoint(null);
+    setSource("manual_province");
+  }
+
+  function coordinates() {
+    switch (source) {
+      case "gps":
+        return {
+          latitude: fix?.latitude ?? null,
+          longitude: fix?.longitude ?? null,
+          accuracy_meters:
+            fix?.accuracy != null ? Math.round(fix.accuracy) : null,
+        };
+      case "manual_map": {
+        const ll = point ? svgToLatLng(point.x, point.y) : null;
+        return {
+          latitude: ll?.latitude ?? null,
+          longitude: ll?.longitude ?? null,
+          accuracy_meters: null,
+        };
+      }
+      default:
+        return { latitude: null, longitude: null, accuracy_meters: null };
+    }
   }
 
   async function addPhoto(capture: boolean) {
@@ -131,18 +155,10 @@ export function IncidentReportForm() {
   }
 
   function submit() {
-    if (!title.trim() || !description.trim()) {
-      dialog.alert({
-        title: "Missing details",
-        message: "Add a short title and describe what you can see.",
-      });
-      return;
-    }
-
-    if (fix === null && provinceCode === null) {
+    if (provinceCode === null) {
       dialog.alert({
         title: "Where is this?",
-        message: "Use your current location, or pick the province.",
+        message: "Use your location, tap the map, or pick the province.",
       });
       return;
     }
@@ -152,19 +168,17 @@ export function IncidentReportForm() {
         type,
         title: title.trim(),
         description: description.trim(),
-        location_source: locationSource(),
-        latitude: fix?.latitude ?? null,
-        longitude: fix?.longitude ?? null,
+        location_source: source,
         province_code: provinceCode,
-        accuracy_meters: fix?.accuracy != null ? Math.round(fix.accuracy) : null,
         photo_thumbnail: photo,
+        ...coordinates(),
       },
       {
         onSuccess: () => {
           dialog.alert({
             title: "Report sent",
             message:
-              "Your LGU can see it now. You will be notified when it is reviewed and referred.",
+              "Your LGU can see it now. Follow it under Account, My reports.",
           });
           router.back();
         },
@@ -179,160 +193,146 @@ export function IncidentReportForm() {
 
   return (
     <>
-      <Text variant="subtitle">
-        Tell your LGU what you can see. They review every report before it goes
-        on the public map.
-      </Text>
+      <SectionLabel>What is happening?</SectionLabel>
+      <ChipRow
+        value={type}
+        onChange={(next) => setType(next)}
+        options={TYPE_OPTIONS}
+      />
 
-      <Field label="What is happening?">
-        <View className="flex-row flex-wrap gap-2">
-          {TYPES.map((t) => (
-            <Chip
-              key={t.key}
-              label={t.label}
-              active={type === t.key}
-              onPress={() => setType(t.key)}
-            />
-          ))}
-        </View>
-      </Field>
+      <View className="gap-3 rounded-[28px] border border-border bg-card p-4">
+        <Field label="Title">
+          <Input
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Waist-deep flooding on Commonwealth Ave"
+          />
+        </Field>
 
-      <Field label="Title">
-        <Input
-          value={title}
-          onChangeText={setTitle}
-          placeholder="Waist-deep flooding on Commonwealth Ave"
-        />
-      </Field>
+        <Field label="What are you seeing?">
+          <Input
+            value={description}
+            onChangeText={setDescription}
+            multiline
+            className="h-24 py-3"
+            style={{ textAlignVertical: "top" }}
+            placeholder="The southbound lane is impassable and the water is rising."
+          />
+        </Field>
+      </View>
 
-      <Field label="What are you seeing?">
-        <Input
-          value={description}
-          onChangeText={setDescription}
-          multiline
-          numberOfLines={4}
-          placeholder="The southbound lane is impassable and the water is rising."
-        />
-      </Field>
-
-      <Card className="gap-3">
-        <View className="flex-row items-center gap-2">
-          <MapPin size={18} color={PH_COLORS.blue} weight="duotone" />
-          <Text variant="label">Location</Text>
-        </View>
-
-        {fix ? (
-          <View className="gap-1">
-            <View className="flex-row items-center gap-2">
+      <SectionLabel>Location</SectionLabel>
+      <View className="gap-3 rounded-[28px] border border-border bg-card p-4">
+        {source === "gps" && fix ? (
+          <View className="gap-1.5">
+            <View className="flex-row flex-wrap items-center gap-2">
               <Badge variant="success" label="Using your location" />
               {fix.accuracy != null ? (
-                <Text variant="caption">
+                <Text className="text-[12px] text-muted-foreground">
                   accurate to about {Math.round(fix.accuracy)}m
                 </Text>
               ) : null}
             </View>
-            <Text variant="caption">
+            <Text className="text-[12px] text-muted-foreground">
               {fix.latitude.toFixed(4)}, {fix.longitude.toFixed(4)}
             </Text>
-            <Pressable onPress={location.reset} hitSlop={6}>
-              <Text className="text-xs font-semibold text-primary">
-                Drop my location
-              </Text>
-            </Pressable>
           </View>
         ) : (
-          <>
-            <Button
-              variant="secondary"
-              label={
-                location.state.status === "locating"
-                  ? "Finding you..."
-                  : "Use my current location"
-              }
-              loading={location.state.status === "locating"}
-              onPress={useMyLocation}
-            />
-
-            {location.state.status === "denied" ? (
-              <Text variant="caption">
-                Location permission was declined. Pick the province below
-                instead.
-              </Text>
-            ) : null}
-
-            {location.state.status === "unavailable" ? (
-              <Text variant="caption">
-                Could not get a fix. Pick the province below instead.
-              </Text>
-            ) : null}
-
-          </>
+          <Button
+            variant="secondary"
+            label={
+              location.state.status === "locating"
+                ? "Finding you..."
+                : "Use my current location"
+            }
+            loading={location.state.status === "locating"}
+            onPress={useMyLocation}
+          />
         )}
 
-        <View className="gap-2 border-t border-border pt-3">
-          <Text variant="caption">
-            {fix
-              ? "Province, worked out from your pin. Correct it if it is wrong."
-              : "Province"}
+        {location.state.status === "denied" ? (
+          <Text className="text-[12px] text-muted-foreground">
+            Location permission was declined. Tap the map or pick a province
+            instead.
           </Text>
+        ) : null}
+
+        {location.state.status === "unavailable" ? (
+          <Text className="text-[12px] text-muted-foreground">
+            Could not get a fix. Tap the map or pick a province instead.
+          </Text>
+        ) : null}
+
+        <View className="gap-2 border-t border-border pt-3">
+          <View className="flex-row items-center gap-2">
+            <MapPin size={15} color={PH_COLORS.blue} weight="fill" />
+            <Text className="flex-1 text-[13px] font-bold text-foreground">
+              {provinceName ?? "No province yet"}
+            </Text>
+            {provinceCode ? (
+              <Badge variant="muted" label={ISLAND_GROUP_LABEL[group]} />
+            ) : null}
+          </View>
 
           {provinceCode ? (
-            <Pressable
-              onPress={() => {
-                setProvinceCode(null);
-                setProvinceQuery("");
-              }}
-              className="h-12 flex-row items-center justify-between rounded-xl border border-input bg-muted px-4"
-            >
-              <Text variant="label">{provinceName}</Text>
-              <Text variant="caption" className="text-primary">
-                Change
+            <LocationMap
+              group={group}
+              point={point}
+              selectedCode={provinceCode}
+              onPick={pickOnMap}
+            />
+          ) : (
+            <Text className="text-[12px] text-muted-foreground">
+              Pick a province to open its map, or use your current location.
+            </Text>
+          )}
+
+          <View className="gap-2">
+            <Input
+              value={provinceQuery}
+              onChangeText={setProvinceQuery}
+              autoCapitalize="words"
+              placeholder={provinceCode ? "Change province" : "Search a province"}
+            />
+            {matches.map((p) => (
+              <Pressable
+                key={p.code}
+                onPress={() => pickProvince(p.code)}
+                android_ripple={null}
+                className="rounded-2xl border border-border px-4 py-2.5 active:opacity-70"
+              >
+                <Text className="text-[14px] font-semibold text-foreground">
+                  {p.title}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {point || fix ? (
+            <Pressable hitSlop={6} onPress={clearLocation}>
+              <Text className="text-[12px] font-semibold text-destructive">
+                Clear the pin
               </Text>
             </Pressable>
-          ) : (
-            <View className="gap-2">
-              <Input
-                value={provinceQuery}
-                onChangeText={setProvinceQuery}
-                autoCapitalize="words"
-                placeholder="Search a province"
-              />
-              {matches.map((p) => (
-                <Pressable
-                  key={p.code}
-                  onPress={() => {
-                    setProvinceCode(p.code);
-                    setProvinceQuery("");
-                  }}
-                  className="rounded-xl border border-border px-4 py-2.5 active:opacity-70"
-                >
-                  <Text variant="label">{p.title}</Text>
-                </Pressable>
-              ))}
-            </View>
-          )}
+          ) : null}
         </View>
-      </Card>
+      </View>
 
-      <Card className="gap-3">
-        <View className="flex-row items-center gap-2">
-          <Camera size={18} color={PH_COLORS.blue} weight="duotone" />
-          <Text variant="label">Photo (optional)</Text>
-        </View>
-
+      <SectionLabel>Photo (optional)</SectionLabel>
+      <View className="gap-3 rounded-[28px] border border-border bg-card p-4">
         {photo ? (
           <View className="gap-2">
             <Image
               source={{ uri: photo }}
-              className="h-40 w-full rounded-xl"
+              className="h-40 w-full rounded-2xl"
               resizeMode="cover"
             />
             <Pressable
               className="flex-row items-center gap-1.5"
               onPress={() => setPhoto(null)}
             >
-              <Trash size={16} color={PH_COLORS.red} />
-              <Text className="text-xs font-semibold text-destructive">
+              <Trash size={15} color={PH_COLORS.red} />
+              <Text className="text-[12px] font-semibold text-destructive">
                 Remove photo
               </Text>
             </Pressable>
@@ -355,19 +355,19 @@ export function IncidentReportForm() {
             />
           </View>
         )}
-      </Card>
+      </View>
 
       <Button
         label="Send report"
         loading={create.isPending}
+        disabled={!title.trim() || !description.trim() || provinceCode === null}
         onPress={submit}
       />
 
-      <View className="flex-row items-start gap-2">
-        <Crosshair size={14} color={PH_COLORS.mutedForeground} />
-        <Text variant="caption" className="flex-1">
-          For life-threatening emergencies call 911 first. This report reaches
-          your LGU, not an emergency dispatcher.
+      <View className="flex-row items-start gap-2 pb-2">
+        <Crosshair size={13} color={PH_COLORS.mutedForeground} />
+        <Text className="flex-1 text-[11px] text-muted-foreground">
+          Your LGU reviews every report before it reaches the public impact map.
         </Text>
       </View>
     </>

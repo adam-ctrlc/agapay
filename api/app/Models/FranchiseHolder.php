@@ -12,9 +12,9 @@ final class FranchiseHolder extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'license_number',
         'plate_number',
-        'phil_sys_id',
         'driver_name',
         'franchise_type',
         'barangay',

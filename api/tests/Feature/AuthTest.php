@@ -22,7 +22,6 @@ final class AuthTest extends TestCase
             'password' => 'password123',
             'password_confirmation' => 'password123',
             'role' => UserRole::Citizen->value,
-            'phil_sys_id' => 'PSN-9999-0001',
         ]);
 
         $response->assertCreated()

@@ -11,7 +11,6 @@ use App\Models\BlockedClaim;
 use App\Models\FranchiseHolder;
 use App\Models\PowerInterruption;
 use App\Models\User;
-use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -25,7 +24,6 @@ final class BlockedClaimTest extends TestCase
 
         $stranger = User::factory()->create([
             'role' => $this->citizenType(),
-            'phil_sys_id' => 'PSN-NOT-ON-LIST',
         ]);
 
         $this->withAuth($stranger)->postJson('/api/allocations', [
@@ -36,7 +34,6 @@ final class BlockedClaimTest extends TestCase
 
         $this->assertDatabaseHas('blocked_claims', [
             'reason' => BlockedReason::NotEligible->value,
-            'phil_sys_id' => 'PSN-NOT-ON-LIST',
             'user_id' => $stranger->id,
         ]);
     }
@@ -118,28 +115,22 @@ final class BlockedClaimTest extends TestCase
 
     public function test_the_registry_tolerates_duplicate_rows_under_one_identity(): void
     {
-        $philSysId = 'PSN-0002-0002-0002';
+        $driver = User::factory()->create(['role' => $this->citizenType()]);
 
         FranchiseHolder::factory()->create([
-            'phil_sys_id' => $philSysId,
+            'user_id' => $driver->id,
             'driver_name' => 'Jose Dela Cruz',
             'license_number' => 'LTFRB-0001',
             'is_active' => true,
         ]);
 
         FranchiseHolder::factory()->create([
-            'phil_sys_id' => $philSysId,
+            'user_id' => $driver->id,
             'driver_name' => 'Jose Dela Cruz Jr.',
             'license_number' => 'LTFRB-0002',
             'is_active' => true,
         ]);
 
-        $this->assertSame(2, FranchiseHolder::query()->where('phil_sys_id', $philSysId)->count());
-
-        User::factory()->create(['phil_sys_id' => $philSysId, 'role' => $this->citizenType()]);
-
-        $this->expectException(UniqueConstraintViolationException::class);
-
-        User::factory()->create(['phil_sys_id' => $philSysId, 'role' => $this->citizenType()]);
+        $this->assertSame(2, FranchiseHolder::query()->where('user_id', $driver->id)->count());
     }
 }

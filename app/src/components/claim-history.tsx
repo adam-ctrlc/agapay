@@ -1,8 +1,10 @@
 import { View } from "react-native";
+import { ClockCounterClockwise } from "phosphor-react-native";
 
 import type { AllocationStatus } from "@/lib/api/allocations";
 import { useAllocations } from "@/lib/queries/allocations";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Text } from "@/components/ui/text";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -57,11 +59,11 @@ export function ClaimHistory() {
 
   if ((allocations.data ?? []).length === 0) {
     return (
-      <Card className="items-center gap-2 py-6">
-        <Text variant="caption" className="text-center">
-          You have not claimed anything yet.
-        </Text>
-      </Card>
+      <EmptyState
+        icon={ClockCounterClockwise}
+        title="No claims yet"
+        description="Once you redeem a voucher at a store, it shows up here with the date and quantity."
+      />
     );
   }
 

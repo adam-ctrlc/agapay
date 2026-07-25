@@ -14,9 +14,9 @@ class DatabaseSeeder extends Seeder
             BarangaySeeder::class,
             ProgramSeeder::class,
             LocationSeeder::class,
+            UserSeeder::class,
             BeneficiarySeeder::class,
             FranchiseHolderSeeder::class,
-            UserSeeder::class,
             PriceReferenceSeeder::class,
             AnnouncementSeeder::class,
             ServiceGuideSeeder::class,
@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             GridStatusSeeder::class,
             PowerInterruptionSeeder::class,
             ResponseTeamSeeder::class,
+            MerchantStoreSeeder::class,
         ]);
     }
 }

@@ -1,27 +1,20 @@
 import { useState } from "react";
 import { Pressable, View } from "react-native";
-import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import type { Edge } from "react-native-safe-area-context";
 import {
   CalendarBlank,
   ClockCounterClockwise,
   IdentificationBadge,
-  IdentificationCard,
   Lock,
-  ShieldCheck,
   SignOut,
-  UserCircle,
-  Warning,
 } from "phosphor-react-native";
 
 import { ApiError } from "@/lib/api/client";
 import type { UserRole } from "@/lib/api/auth";
-import {
-  deleteAccount,
-  updatePassword,
-  updateProfile,
-} from "@/lib/api/auth";
+import { deleteAccount, updatePassword, updateProfile } from "@/lib/api/auth";
 import { useAuth } from "@/lib/auth/context";
+import { useIncidentReports } from "@/lib/queries/incident-reports";
 import { PH_COLORS } from "@/lib/theme";
 import { Screen } from "@/components/ui/screen";
 import { Text } from "@/components/ui/text";
@@ -29,16 +22,29 @@ import { Input } from "@/components/ui/input";
 import { IconInput } from "@/components/ui/icon-input";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { useDialog } from "@/components/ui/dialog";
+import {
+  ActionRow,
+  Group,
+  Row,
+  SectionLabel,
+} from "@/components/ui/list-group";
+import { Segmented, type SegmentedOption } from "@/components/ui/segmented";
+import { MyReports } from "@/components/reports/my-reports";
 
-type BadgeVariant = "secondary" | "accent" | "default";
+const HEADER_COLORS = ["#0b2f8f", "#0038a8", "#1a5ee0"] as const;
 
-const ROLE_LABELS: Record<UserRole, { text: string; variant: BadgeVariant }> = {
-  citizen: { text: "Citizen", variant: "secondary" },
-  merchant: { text: "Merchant", variant: "accent" },
-  lgu_admin: { text: "LGU Admin", variant: "default" },
+type AccountTab = "profile" | "reports";
+
+const ACCOUNT_TABS: SegmentedOption<AccountTab>[] = [
+  { key: "profile", label: "Personal info" },
+  { key: "reports", label: "My reports" },
+];
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  citizen: "Citizen",
+  merchant: "Merchant",
+  lgu_admin: "LGU Admin",
 };
 
 const MONTHS = [
@@ -57,7 +63,7 @@ const MONTHS = [
 ];
 
 function dateLabel(iso: string | null | undefined) {
-  if (!iso) return "-";
+  if (!iso) return "Not set";
   const d = new Date(iso);
   return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
@@ -72,45 +78,6 @@ function initialsOf(name: string) {
     .toUpperCase();
 }
 
-function InfoRow({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <View className="flex-row items-start gap-3 py-2.5">
-      <View className="mt-0.5">{icon}</View>
-      <View className="flex-1 gap-0.5">
-        <Text variant="caption">{label}</Text>
-        <Text variant="label">{value}</Text>
-      </View>
-    </View>
-  );
-}
-
-function Divider() {
-  return <View className="h-px bg-border" />;
-}
-
-function SectionHeading({
-  icon,
-  children,
-}: {
-  icon: React.ReactNode;
-  children: string;
-}) {
-  return (
-    <View className="flex-row items-center gap-2">
-      {icon}
-      <Text variant="heading">{children}</Text>
-    </View>
-  );
-}
-
 export function AccountScreen({
   title,
   edges = [],
@@ -119,7 +86,6 @@ export function AccountScreen({
   edges?: Edge[];
 }) {
   const { user, signOut, updateUser } = useAuth();
-  const router = useRouter();
   const dialog = useDialog();
 
   const [firstName, setFirstName] = useState(user?.first_name ?? "");
@@ -130,6 +96,8 @@ export function AccountScreen({
   const [editingProfile, setEditingProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
 
+  const [tab, setTab] = useState<AccountTab>("profile");
+
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
@@ -137,8 +105,16 @@ export function AccountScreen({
   const [savingPw, setSavingPw] = useState(false);
 
   const name = user?.name ?? "-";
-  const role = ROLE_LABELS[user?.role ?? "citizen"];
-  const lockedClass = editingProfile ? undefined : "bg-muted";
+  const roleLabel = ROLE_LABELS[user?.role ?? "citizen"];
+
+  /**
+   * Only citizens can file reports, so the other roles keep a single-pane
+   * account rather than a tab that could only ever be empty.
+   */
+  const canReport = user?.role === "citizen";
+  const showReports = canReport && tab === "reports";
+
+  const reports = useIncidentReports({}, canReport);
 
   function cancelProfile() {
     setFirstName(user?.first_name ?? "");
@@ -225,7 +201,6 @@ export function AccountScreen({
     try {
       await deleteAccount();
       await signOut();
-      router.replace("/");
     } catch (e) {
       dialog.alert({
         title: "Could not delete",
@@ -235,42 +210,101 @@ export function AccountScreen({
   }
 
   async function onSignOut() {
+    const ok = await dialog.confirm({
+      title: "Sign out?",
+      message:
+        "You will need your email and password to get back in. Anything queued on this device stays saved.",
+      confirmLabel: "Sign out",
+      cancelLabel: "Cancel",
+      destructive: true,
+    });
+    if (!ok) return;
+
+    /**
+     * No router.replace here. Clearing the session flips RoleGate to its
+     * Redirect, which unmounts this tab navigator. Racing an imperative
+     * navigation against that is what threw "action REPLACE with payload
+     * {name: 'index'} was not handled by any navigator".
+     */
     await signOut();
-    router.replace("/");
   }
 
   return (
-    <Screen edges={edges}>
-      {title ? <Text variant="title">{title}</Text> : null}
+    <Screen
+      edges={edges}
+      refreshing={showReports && reports.isRefetching}
+      onRefresh={showReports ? () => reports.refetch() : undefined}
+    >
+      {title ? (
+        <Text className="pt-1 text-[28px] font-bold leading-tight text-foreground">
+          {title}
+        </Text>
+      ) : null}
 
-      <Card className="items-center gap-2 py-5">
-        <View className="h-16 w-16 items-center justify-center rounded-full bg-accent">
-          <Text className="text-xl font-bold text-accent-foreground">
-            {initialsOf(name)}
-          </Text>
+      <LinearGradient
+        colors={HEADER_COLORS}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ borderRadius: 28, overflow: "hidden" }}
+      >
+        <View
+          pointerEvents="none"
+          className="absolute -right-8 -top-12 h-40 w-40 rounded-full bg-white/10"
+        />
+        <View className="flex-row items-center gap-4 p-5">
+          <View className="h-16 w-16 items-center justify-center rounded-full bg-white/20">
+            <Text className="text-xl font-bold text-white">
+              {initialsOf(name)}
+            </Text>
+          </View>
+          <View className="flex-1 gap-1">
+            <Text className="text-xl font-bold text-white" numberOfLines={1}>
+              {name}
+            </Text>
+            {user?.username ? (
+              <Text className="text-[13px] text-white/70">
+                @{user.username}
+              </Text>
+            ) : null}
+            <View className="mt-0.5 self-start rounded-full bg-white/20 px-2.5 py-1">
+              <Text className="text-[11px] font-bold text-white">
+                {roleLabel}
+              </Text>
+            </View>
+          </View>
         </View>
-        <View className="items-center">
-          <Text variant="heading">{name}</Text>
-          {user?.username ? (
-            <Text variant="caption">@{user.username}</Text>
-          ) : null}
-        </View>
-        <Badge variant={role.variant} label={role.text} className="self-center" />
-      </Card>
+      </LinearGradient>
 
-      <SectionHeading
-        icon={<UserCircle size={20} color={PH_COLORS.blue} weight="duotone" />}
+      {canReport ? (
+        <Segmented
+          value={tab}
+          onChange={(next) => setTab(next)}
+          options={ACCOUNT_TABS}
+        />
+      ) : null}
+
+      {showReports ? <MyReports /> : null}
+
+      {showReports ? null : (
+        <>
+      <SectionLabel
+        action={
+          editingProfile ? undefined : (
+            <Pressable hitSlop={8} onPress={() => setEditingProfile(true)}>
+              <Text className="text-[13px] font-bold text-primary">Edit</Text>
+            </Pressable>
+          )
+        }
       >
         Personal details
-      </SectionHeading>
-      <Card>
-        <View className="gap-3">
+      </SectionLabel>
+
+      {editingProfile ? (
+        <View className="gap-3 rounded-3xl border border-border bg-card p-4">
           <Field label="First name">
             <Input
               value={firstName}
               onChangeText={setFirstName}
-              editable={editingProfile}
-              className={lockedClass}
               placeholder="First name"
             />
           </Field>
@@ -278,8 +312,6 @@ export function AccountScreen({
             <Input
               value={middleName}
               onChangeText={setMiddleName}
-              editable={editingProfile}
-              className={lockedClass}
               placeholder="Middle name (optional)"
             />
           </Field>
@@ -287,8 +319,6 @@ export function AccountScreen({
             <Input
               value={lastName}
               onChangeText={setLastName}
-              editable={editingProfile}
-              className={lockedClass}
               placeholder="Last name"
             />
           </Field>
@@ -296,8 +326,6 @@ export function AccountScreen({
             <Input
               value={phone}
               onChangeText={setPhone}
-              editable={editingProfile}
-              className={lockedClass}
               keyboardType="phone-pad"
               placeholder="09xxxxxxxxx"
             />
@@ -306,73 +334,55 @@ export function AccountScreen({
             <Input
               value={email}
               onChangeText={setEmail}
-              editable={editingProfile}
-              className={lockedClass}
               autoCapitalize="none"
               keyboardType="email-address"
               placeholder="you@example.com"
             />
           </Field>
 
-          {editingProfile ? (
-            <View className="flex-row gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                label="Cancel"
-                onPress={cancelProfile}
-              />
-              <Button
-                className="flex-1"
-                label="Save"
-                loading={savingProfile}
-                onPress={onSaveProfile}
-              />
-            </View>
-          ) : (
+          <View className="flex-row gap-2">
             <Button
               variant="outline"
-              label="Edit details"
-              onPress={() => setEditingProfile(true)}
+              className="flex-1"
+              label="Cancel"
+              onPress={cancelProfile}
             />
-          )}
+            <Button
+              className="flex-1"
+              label="Save"
+              loading={savingProfile}
+              disabled={!firstName.trim() || !lastName.trim() || !email.trim()}
+              onPress={onSaveProfile}
+            />
+          </View>
         </View>
-      </Card>
+      ) : (
+        <Group>
+          <Row label="First name" value={user?.first_name || "Not set"} />
+          <Row label="Middle name" value={user?.middle_name || "Not set"} />
+          <Row label="Last name" value={user?.last_name || "Not set"} />
+          <Row label="Mobile" value={user?.phone || "Not set"} />
+          <Row label="Email" value={user?.email || "Not set"} last />
+        </Group>
+      )}
 
-      <SectionHeading
-        icon={<ShieldCheck size={20} color={PH_COLORS.blue} weight="duotone" />}
-      >
-        Identity & account
-      </SectionHeading>
-      <Card>
-        <InfoRow
-          icon={
-            <IdentificationCard
-              size={20}
-              color={PH_COLORS.mutedForeground}
-              weight="duotone"
-            />
-          }
-          label="Philippine Identification System (PhilSys) ID"
-          value={user?.phil_sys_id ?? "Not linked"}
-        />
-        <Divider />
-        <InfoRow
+      <SectionLabel>Identity</SectionLabel>
+      <Group>
+        <Row
           icon={
             <IdentificationBadge
-              size={20}
+              size={19}
               color={PH_COLORS.mutedForeground}
               weight="duotone"
             />
           }
-          label="Account role"
-          value={role.text}
+          label="Role"
+          value={roleLabel}
         />
-        <Divider />
-        <InfoRow
+        <Row
           icon={
             <CalendarBlank
-              size={20}
+              size={19}
               color={PH_COLORS.mutedForeground}
               weight="duotone"
             />
@@ -380,108 +390,107 @@ export function AccountScreen({
           label="Member since"
           value={dateLabel(user?.created_at)}
         />
-        <Divider />
-        <InfoRow
+        <Row
           icon={
             <ClockCounterClockwise
-              size={20}
+              size={19}
               color={PH_COLORS.mutedForeground}
               weight="duotone"
             />
           }
           label="Last updated"
           value={dateLabel(user?.updated_at)}
+          last
         />
-      </Card>
+      </Group>
 
-      <SectionHeading
-        icon={<Lock size={20} color={PH_COLORS.blue} weight="duotone" />}
-      >
-        Change password
-      </SectionHeading>
-      <Card>
-        {editingPassword ? (
-          <View className="gap-3">
-            <Field label="Current password">
-              <IconInput
-                icon={<Lock size={20} color={PH_COLORS.mutedForeground} />}
-                togglePassword
-                value={currentPw}
-                onChangeText={setCurrentPw}
-                autoCapitalize="none"
-                placeholder="Your current password"
-              />
-            </Field>
-            <Field label="New password">
-              <IconInput
-                icon={<Lock size={20} color={PH_COLORS.mutedForeground} />}
-                togglePassword
-                value={newPw}
-                onChangeText={setNewPw}
-                autoCapitalize="none"
-                placeholder="At least 8 characters"
-              />
-            </Field>
-            <Field label="Confirm new password">
-              <IconInput
-                icon={<Lock size={20} color={PH_COLORS.mutedForeground} />}
-                togglePassword
-                value={confirmPw}
-                onChangeText={setConfirmPw}
-                autoCapitalize="none"
-                placeholder="Re-enter new password"
-              />
-            </Field>
-            <View className="flex-row gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                label="Cancel"
-                onPress={cancelPassword}
-              />
-              <Button
-                className="flex-1"
-                label="Update"
-                loading={savingPw}
-                onPress={onChangePassword}
-              />
-            </View>
+      <SectionLabel>Security</SectionLabel>
+
+      {editingPassword ? (
+        <View className="gap-3 rounded-3xl border border-border bg-card p-4">
+          <Field label="Current password">
+            <IconInput
+              icon={<Lock size={20} color={PH_COLORS.mutedForeground} />}
+              togglePassword
+              value={currentPw}
+              onChangeText={setCurrentPw}
+              autoCapitalize="none"
+              placeholder="Your current password"
+            />
+          </Field>
+          <Field label="New password">
+            <IconInput
+              icon={<Lock size={20} color={PH_COLORS.mutedForeground} />}
+              togglePassword
+              value={newPw}
+              onChangeText={setNewPw}
+              autoCapitalize="none"
+              placeholder="At least 8 characters"
+            />
+          </Field>
+          <Field label="Confirm new password">
+            <IconInput
+              icon={<Lock size={20} color={PH_COLORS.mutedForeground} />}
+              togglePassword
+              value={confirmPw}
+              onChangeText={setConfirmPw}
+              autoCapitalize="none"
+              placeholder="Re-enter new password"
+            />
+          </Field>
+          <View className="flex-row gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              label="Cancel"
+              onPress={cancelPassword}
+            />
+            <Button
+              className="flex-1"
+              label="Update"
+              loading={savingPw}
+              disabled={!currentPw || !newPw || !confirmPw}
+              onPress={onChangePassword}
+            />
           </View>
-        ) : (
-          <Button
-            variant="outline"
+        </View>
+      ) : (
+        <Group>
+          <ActionRow
+            icon={<Lock size={19} color={PH_COLORS.blue} weight="duotone" />}
             label="Change password"
             onPress={() => setEditingPassword(true)}
           />
-        )}
-      </Card>
+          <ActionRow
+            icon={
+              <SignOut
+                size={19}
+                color={PH_COLORS.mutedForeground}
+                weight="duotone"
+              />
+            }
+            label="Sign out"
+            onPress={onSignOut}
+            last
+          />
+        </Group>
+      )}
 
       <Pressable
-        onPress={onSignOut}
-        className="flex-row items-center justify-center gap-2 rounded-xl border border-border py-3 active:opacity-60"
+        onPress={onDeleteAccount}
+        android_ripple={null}
+        className="items-center py-2 active:opacity-60"
       >
-        <SignOut size={18} color={PH_COLORS.mutedForeground} />
-        <Text variant="label" className="text-muted-foreground">
-          Sign out
+        <Text className="text-[13px] font-semibold text-destructive">
+          Delete my account
         </Text>
       </Pressable>
 
-      <SectionHeading
-        icon={<Warning size={20} color={PH_COLORS.red} weight="duotone" />}
-      >
-        Delete account
-      </SectionHeading>
-      <Card className="gap-3">
-        <Text variant="caption">
-          Permanently delete your account and all related records. This cannot
-          be undone.
-        </Text>
-        <Button
-          variant="destructive"
-          label="Delete my account"
-          onPress={onDeleteAccount}
-        />
-      </Card>
+      <Text className="pb-2 text-center text-[11px] text-muted-foreground">
+        Deleting removes your account and all related records permanently.
+      </Text>
+        </>
+      )}
     </Screen>
   );
 }

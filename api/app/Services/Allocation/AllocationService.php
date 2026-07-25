@@ -181,7 +181,6 @@ final class AllocationService
     ): void {
         BlockedClaim::query()->create([
             'reason' => $exception->reason,
-            'phil_sys_id' => $user->phil_sys_id,
             'user_id' => $user->getKey(),
             'program_id' => $commodity->program?->getKey(),
             'location_id' => $location->getKey(),

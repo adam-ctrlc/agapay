@@ -14,6 +14,7 @@ import {
 } from "@/lib/queries/notifications";
 import { PH_COLORS } from "@/lib/theme";
 import { Screen } from "@/components/ui/screen";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Text } from "@/components/ui/text";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -88,12 +89,11 @@ export default function NotificationsScreen() {
           Couldn&apos;t load your notifications.
         </Text>
       ) : items.length === 0 ? (
-        <Card className="items-center gap-2 py-8">
-          <Bell size={28} color={PH_COLORS.mutedForeground} />
-          <Text variant="caption" className="text-center">
-            No notifications yet.
-          </Text>
-        </Card>
+        <EmptyState
+          icon={Bell}
+          title="No notifications yet"
+          description="Updates on your claims, reports, and LGU alerts land here."
+        />
       ) : (
         <View className="gap-3">
           {items.map((item) => (

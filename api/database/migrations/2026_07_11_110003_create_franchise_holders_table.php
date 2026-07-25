@@ -12,7 +12,6 @@ return new class extends Migration
             $table->id();
             $table->string('license_number')->nullable()->index();
             $table->string('plate_number')->nullable()->index();
-            $table->string('phil_sys_id')->nullable()->index();
             $table->string('driver_name');
             $table->string('franchise_type')->default('puv');
             $table->string('barangay')->nullable();

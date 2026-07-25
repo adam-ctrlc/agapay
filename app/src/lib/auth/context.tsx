@@ -83,11 +83,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
-    try {
-      await authApi.logout();
-    } catch {
-      // token may already be invalid; sign out locally regardless
-    }
+    /**
+     * Revoked in the background rather than awaited. apiRequest builds its
+     * Authorization header synchronously, so the call keeps this token while
+     * the UI drops to the sign-in screen immediately, instead of sitting on a
+     * cold serverless round trip. Signing out locally is what matters; the
+     * failure path already discarded the token regardless.
+     */
+    void authApi.logout().catch(() => {});
+
     queryClient.clear();
     await apply(null, null);
   }, [apply]);

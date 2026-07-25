@@ -57,25 +57,17 @@ final class EligibilityService
 
     private function hasBeneficiaryRecord(User $user): bool
     {
-        if ($user->phil_sys_id === null) {
-            return false;
-        }
-
         return Beneficiary::query()
             ->where('is_active', true)
-            ->where('phil_sys_id', $user->phil_sys_id)
+            ->where('user_id', $user->getKey())
             ->exists();
     }
 
     private function hasFranchiseRecord(User $user): bool
     {
-        if ($user->phil_sys_id === null) {
-            return false;
-        }
-
         return FranchiseHolder::query()
             ->where('is_active', true)
-            ->where('phil_sys_id', $user->phil_sys_id)
+            ->where('user_id', $user->getKey())
             ->exists();
     }
 }

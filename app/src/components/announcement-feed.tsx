@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { Pressable, View } from "react-native";
-import { MagnifyingGlass } from "phosphor-react-native";
+import { View } from "react-native";
+import { MagnifyingGlass, Megaphone } from "phosphor-react-native";
 
 import { ApiError } from "@/lib/api/client";
 import type { AnnouncementCategory } from "@/lib/api/announcements";
@@ -8,16 +8,18 @@ import {
   useAnnouncements,
   useDeleteAnnouncement,
 } from "@/lib/queries/announcements";
-import { cn } from "@/lib/utils";
 import { PH_COLORS } from "@/lib/theme";
 import { Text } from "@/components/ui/text";
-import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useDialog } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { IconInput } from "@/components/ui/icon-input";
+import { ChipRow, type SegmentedOption } from "@/components/ui/segmented";
 import { AnnouncementCard } from "@/components/announcement-card";
 
-const CATEGORIES: { key: AnnouncementCategory | "all"; label: string }[] = [
+type FeedCategory = AnnouncementCategory | "all";
+
+const CATEGORIES: SegmentedOption<FeedCategory>[] = [
   { key: "all", label: "All" },
   { key: "relief", label: "Relief" },
   { key: "advisory", label: "Advisory" },
@@ -29,7 +31,7 @@ export function AnnouncementFeed({ manage }: { manage?: boolean }) {
   const announcements = useAnnouncements();
   const del = useDeleteAnnouncement();
   const dialog = useDialog();
-  const [category, setCategory] = useState<AnnouncementCategory | "all">("all");
+  const [category, setCategory] = useState<FeedCategory>("all");
   const [search, setSearch] = useState("");
 
   const items = useMemo(() => {
@@ -76,30 +78,11 @@ export function AnnouncementFeed({ manage }: { manage?: boolean }) {
         placeholder="Search announcements"
       />
 
-      <View className="flex-row flex-wrap gap-2">
-        {CATEGORIES.map((c) => {
-          const active = category === c.key;
-          return (
-            <Pressable
-              key={c.key}
-              onPress={() => setCategory(c.key)}
-              className={cn(
-                "rounded-full px-3 py-1.5",
-                active ? "bg-primary" : "bg-muted",
-              )}
-            >
-              <Text
-                className={cn(
-                  "text-sm font-medium",
-                  active ? "text-primary-foreground" : "text-muted-foreground",
-                )}
-              >
-                {c.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <ChipRow
+        value={category}
+        onChange={(next) => setCategory(next)}
+        options={CATEGORIES}
+      />
 
       {announcements.isLoading ? (
         <View className="gap-3">
@@ -112,9 +95,13 @@ export function AnnouncementFeed({ manage }: { manage?: boolean }) {
           Couldn&apos;t load announcements.
         </Text>
       ) : items.length === 0 ? (
-        <Card>
-          <Text variant="caption">No announcements match your search.</Text>
-        </Card>
+        <EmptyState
+          icon={Megaphone}
+          title="Nothing here"
+          description="No announcement matches your search. Try another word or clear the filter."
+          tint={PH_COLORS.white}
+          color={PH_COLORS.mutedForeground}
+        />
       ) : (
         items.map((a) => (
           <AnnouncementCard

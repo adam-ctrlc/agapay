@@ -8,7 +8,6 @@ import type {
 } from "@/lib/api/announcements";
 import { useToggleLike } from "@/lib/queries/announcements";
 import { PH_COLORS } from "@/lib/theme";
-import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { Badge } from "@/components/ui/badge";
 import { CommentsSection } from "@/components/announcement-comments";
@@ -80,9 +79,12 @@ export function AnnouncementCard({
   const source = roleLabel(announcement.author?.role);
 
   return (
-    <Card className="gap-2">
-      <View className="flex-row items-center justify-between">
+    <View className="gap-2 rounded-3xl border border-border bg-card p-4">
+      <View className="flex-row items-center gap-2">
         <Badge variant={cat.variant} label={cat.label} />
+        <Text className="flex-1 text-[11px] font-medium text-muted-foreground">
+          {timeAgo(announcement.created_at)}
+        </Text>
         {onDelete ? (
           <Pressable onPress={onDelete} hitSlop={8}>
             <Text variant="caption" className="font-medium text-destructive">
@@ -92,14 +94,14 @@ export function AnnouncementCard({
         ) : null}
       </View>
 
-      <Text variant="heading">{announcement.title}</Text>
+      <Text className="text-[17px] font-bold leading-snug text-foreground">
+        {announcement.title}
+      </Text>
       <Text className="text-sm leading-5 text-foreground">
         {announcement.body}
       </Text>
-      <Text variant="caption">
-        {[announcement.author?.name, source, timeAgo(announcement.created_at)]
-          .filter(Boolean)
-          .join(" · ")}
+      <Text className="text-xs text-muted-foreground">
+        {[announcement.author?.name, source].filter(Boolean).join(" · ")}
       </Text>
 
       <View className="mt-1 flex-row items-center gap-6 border-t border-border pt-2.5">
@@ -126,6 +128,6 @@ export function AnnouncementCard({
       {showComments ? (
         <CommentsSection announcementId={announcement.id} />
       ) : null}
-    </Card>
+    </View>
   );
 }

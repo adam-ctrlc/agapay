@@ -12,7 +12,6 @@ final class BlockedClaim extends Model
 {
     protected $fillable = [
         'reason',
-        'phil_sys_id',
         'user_id',
         'program_id',
         'location_id',

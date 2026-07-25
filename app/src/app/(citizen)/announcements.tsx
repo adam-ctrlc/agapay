@@ -14,12 +14,15 @@ export default function CitizenAnnouncements() {
       refreshing={announcements.isRefetching}
       onRefresh={() => announcements.refetch()}
     >
-      <View className="gap-0.5">
-        <Text variant="title">Announcements</Text>
-        <Text variant="subtitle">
-          Latest news and advisories from your LGU and stores.
+      <View className="gap-0.5 pt-1">
+        <Text className="text-[28px] font-bold leading-tight text-foreground">
+          Alerts
+        </Text>
+        <Text className="text-[13px] text-muted-foreground">
+          News and advisories from your LGU and stores.
         </Text>
       </View>
+
       <AnnouncementFeed />
     </Screen>
   );

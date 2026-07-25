@@ -118,6 +118,24 @@ export async function createInterruption(body: {
   return res.data;
 }
 
+export async function updateInterruption(
+  id: number,
+  body: {
+    type?: InterruptionType;
+    utility?: string;
+    barangay_id?: number;
+    households_affected?: number;
+    starts_at?: string;
+    ends_at?: string;
+  },
+) {
+  const res = await apiRequest<{ data: PowerInterruption }>(
+    `/energy/interruptions/${id}`,
+    { method: "PUT", body },
+  );
+  return res.data;
+}
+
 export async function deleteInterruption(id: number) {
   return apiRequest<{ message: string }>(`/energy/interruptions/${id}`, {
     method: "DELETE",

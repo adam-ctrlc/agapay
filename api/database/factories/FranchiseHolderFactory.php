@@ -18,7 +18,6 @@ class FranchiseHolderFactory extends Factory
         return [
             'license_number' => fake()->unique()->numerify('LTFRB-#######'),
             'plate_number' => strtoupper(fake()->unique()->bothify('???-####')),
-            'phil_sys_id' => fake()->unique()->numerify('PSN-####-####-####'),
             'driver_name' => fake()->name(),
             'franchise_type' => 'puv',
             'barangay' => 'Barangay '.fake()->numerify('###'),

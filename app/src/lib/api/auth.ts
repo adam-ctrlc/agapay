@@ -11,10 +11,12 @@ export type User = {
   username: string | null;
   email: string;
   role: UserRole;
-  phil_sys_id: string | null;
   phone: string | null;
   barangay_id: number | null;
   location_id: number | null;
+  needs_approval: boolean;
+  is_approved: boolean;
+  approved_at: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -34,7 +36,6 @@ export type RegisterPayload = {
   password: string;
   password_confirmation: string;
   role: UserRole;
-  phil_sys_id?: string;
   phone?: string;
   barangay_id?: number;
   location_id?: number;

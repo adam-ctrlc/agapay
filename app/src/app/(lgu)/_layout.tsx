@@ -6,80 +6,67 @@ import {
   Megaphone,
   Tag,
   User,
+  type IconProps,
 } from "phosphor-react-native";
 
 import { RoleGate } from "@/components/role-gate";
-import { PH_COLORS } from "@/lib/theme";
+import {
+  FloatingTabBarProvider,
+  GlassTabBar,
+} from "@/components/ui/glass-tab-bar";
 
-function tabColor(focused: boolean) {
-  return focused ? PH_COLORS.blue : PH_COLORS.mutedForeground;
+type TabIcon = React.ComponentType<IconProps>;
+
+function tabIcon(Icon: TabIcon) {
+  return function renderIcon({
+    focused,
+    color,
+    size,
+  }: {
+    focused: boolean;
+    color: string;
+    size: number;
+  }) {
+    return (
+      <Icon color={color} size={size} weight={focused ? "fill" : "regular"} />
+    );
+  };
 }
 
 export default function LguLayout() {
   return (
     <RoleGate role="lgu_admin">
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarActiveTintColor: PH_COLORS.blue,
-          tabBarInactiveTintColor: PH_COLORS.mutedForeground,
-        }}
-      >
-        <Tabs.Screen
-          name="index"
-          options={{
-            tabBarLabel: "Dashboard",
-            tabBarIcon: ({ focused, size }) => (
-              <ChartBar color={tabColor(focused)} size={size} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="announcements"
-          options={{
-            tabBarLabel: "Alerts",
-            tabBarIcon: ({ focused, size }) => (
-              <Megaphone color={tabColor(focused)} size={size} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="prices"
-          options={{
-            tabBarLabel: "Prices",
-            tabBarIcon: ({ focused, size }) => (
-              <Tag color={tabColor(focused)} size={size} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="guides"
-          options={{
-            tabBarLabel: "Gabay",
-            tabBarIcon: ({ focused, size }) => (
-              <BookOpen color={tabColor(focused)} size={size} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="hazards"
-          options={{
-            tabBarLabel: "Risk",
-            tabBarIcon: ({ focused, size }) => (
-              <Lightning color={tabColor(focused)} size={size} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="account"
-          options={{
-            tabBarLabel: "Account",
-            tabBarIcon: ({ focused, size }) => (
-              <User color={tabColor(focused)} size={size} />
-            ),
-          }}
-        />
-      </Tabs>
+      <FloatingTabBarProvider>
+        <Tabs
+          tabBar={(props) => <GlassTabBar {...props} />}
+          screenOptions={{ headerShown: false }}
+        >
+          <Tabs.Screen
+            name="index"
+            options={{ tabBarLabel: "Home", tabBarIcon: tabIcon(ChartBar) }}
+          />
+          <Tabs.Screen
+            name="announcements"
+            options={{ tabBarLabel: "Alerts", tabBarIcon: tabIcon(Megaphone) }}
+          />
+          <Tabs.Screen
+            name="prices"
+            options={{ tabBarLabel: "Prices", tabBarIcon: tabIcon(Tag) }}
+          />
+          <Tabs.Screen
+            name="guides"
+            options={{ tabBarLabel: "Gabay", tabBarIcon: tabIcon(BookOpen) }}
+          />
+          <Tabs.Screen
+            name="hazards"
+            options={{ tabBarLabel: "Risk", tabBarIcon: tabIcon(Lightning) }}
+          />
+          <Tabs.Screen
+            name="account"
+            options={{ tabBarLabel: "Account", tabBarIcon: tabIcon(User) }}
+          />
+        </Tabs>
+      </FloatingTabBarProvider>
     </RoleGate>
   );
 }

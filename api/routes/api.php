@@ -13,9 +13,11 @@ use App\Http\Controllers\Api\EnergyRefreshController;
 use App\Http\Controllers\Api\GridStatusController;
 use App\Http\Controllers\Api\HazardEventController;
 use App\Http\Controllers\Api\HeatmapController;
+use App\Http\Controllers\Api\IncidentReportCommentController;
 use App\Http\Controllers\Api\IncidentReportController;
 use App\Http\Controllers\Api\KeyController;
 use App\Http\Controllers\Api\LocationController;
+use App\Http\Controllers\Api\MerchantApprovalController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PowerInterruptionController;
 use App\Http\Controllers\Api\PriceController;
@@ -80,6 +82,10 @@ Route::middleware('auth:api')->group(function (): void {
     Route::get('incident-reports', [IncidentReportController::class, 'index']);
     Route::get('incident-reports/{report}', [IncidentReportController::class, 'show']);
 
+    Route::get('incident-reports/{report}/comments', [IncidentReportCommentController::class, 'index']);
+    Route::post('incident-reports/{report}/comments', [IncidentReportCommentController::class, 'store']);
+    Route::delete('incident-report-comments/{comment}', [IncidentReportCommentController::class, 'destroy']);
+
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::post('notifications/read-all', [NotificationController::class, 'markAllRead']);
     Route::post('notifications/{notification}/read', [NotificationController::class, 'markRead']);
@@ -104,12 +110,16 @@ Route::middleware('auth:api')->group(function (): void {
         Route::delete('claim-reminders/{reminder}', [ClaimReminderController::class, 'destroy']);
     });
 
-    Route::middleware('role:merchant')->group(function (): void {
+    Route::middleware(['role:merchant', 'approved'])->group(function (): void {
         Route::post('redemptions', [RedemptionController::class, 'store']);
         Route::post('redemptions/batch', [RedemptionController::class, 'batch']);
     });
 
     Route::middleware('role:lgu_admin')->group(function (): void {
+        Route::get('merchants', [MerchantApprovalController::class, 'index']);
+        Route::post('merchants/{merchant}/approve', [MerchantApprovalController::class, 'approve']);
+        Route::post('merchants/{merchant}/revoke', [MerchantApprovalController::class, 'revoke']);
+
         Route::get('dashboard/heatmap', [DashboardController::class, 'heatmap']);
         Route::get('dashboard/stats', [DashboardController::class, 'stats']);
 

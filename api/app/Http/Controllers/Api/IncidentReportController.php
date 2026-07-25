@@ -29,6 +29,7 @@ final class IncidentReportController extends Controller
 
         $reports = IncidentReport::query()
             ->with(['referrals.team', 'province', 'barangay', 'user'])
+            ->withCount('comments')
             ->when(
                 $user->role !== UserRole::LguAdmin,
                 fn ($query) => $query->where('user_id', $user->getKey()),

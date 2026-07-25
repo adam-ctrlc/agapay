@@ -1,24 +1,54 @@
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
+import { Basket, Storefront } from "phosphor-react-native";
 
 import { ApiError } from "@/lib/api/client";
 import type { RegisterPayload, UserRole } from "@/lib/api/auth";
 import { useLocations } from "@/lib/queries/locations";
 import { useAuth } from "@/lib/auth/context";
 import { cn } from "@/lib/utils";
+import { PH_COLORS } from "@/lib/theme";
 import { Screen } from "@/components/ui/screen";
 import { Text } from "@/components/ui/text";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SectionLabel } from "@/components/ui/list-group";
 import { TextLink } from "@/components/ui/text-link";
+import { LogoTile } from "@/components/brand/logo-tile";
 
-const ROLES: { key: UserRole; label: string }[] = [
-  { key: "citizen", label: "Citizen" },
-  { key: "merchant", label: "Merchant" },
+const ROLES: {
+  key: UserRole;
+  label: string;
+  hint: string;
+  icon: (active: boolean) => React.ReactNode;
+}[] = [
+  {
+    key: "citizen",
+    label: "Citizen",
+    hint: "Claim relief",
+    icon: (active) => (
+      <Basket
+        size={22}
+        color={active ? PH_COLORS.white : PH_COLORS.blue}
+        weight="duotone"
+      />
+    ),
+  },
+  {
+    key: "merchant",
+    label: "Merchant",
+    hint: "Release goods",
+    icon: (active) => (
+      <Storefront
+        size={22}
+        color={active ? PH_COLORS.white : PH_COLORS.blue}
+        weight="duotone"
+      />
+    ),
+  },
 ];
 
 export default function Register() {
@@ -31,7 +61,6 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [phone, setPhone] = useState("");
-  const [philSysId, setPhilSysId] = useState("");
   const [role, setRole] = useState<UserRole>("citizen");
   const [locationId, setLocationId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +72,8 @@ export default function Register() {
   function fieldError(key: string) {
     return fieldErrors[key]?.[0];
   }
+
+  const mismatch = confirm.length > 0 && password !== confirm;
 
   async function onSubmit() {
     setError(null);
@@ -58,7 +89,6 @@ export default function Register() {
         role,
         phone: phone || undefined,
       };
-      if (role === "citizen") payload.phil_sys_id = philSysId || undefined;
       if (role === "merchant") payload.location_id = locationId ?? undefined;
 
       await signUp(payload);
@@ -77,44 +107,72 @@ export default function Register() {
 
   return (
     <Screen>
-      <View className="mt-6 gap-1">
-        <Text variant="title">Create account</Text>
-        <Text variant="subtitle">Join AyudaLock to access relief programs.</Text>
+      <View className="mt-4 items-center gap-3">
+        <LogoTile size={66} radius={21} mark={44} />
+        <View className="items-center gap-0.5">
+          <Text className="text-[24px] font-bold leading-tight text-foreground">
+            Create account
+          </Text>
+          <Text className="text-center text-[13px] text-muted-foreground">
+            Join AyudaLock to access relief programs.
+          </Text>
+        </View>
       </View>
 
-      <View className="gap-1">
-        <Text variant="label">I am a</Text>
-        <View className="flex-row gap-2">
-          {ROLES.map((r) => {
-            const active = role === r.key;
-            return (
-              <Pressable
-                key={r.key}
-                onPress={() => setRole(r.key)}
+      <SectionLabel>I am a</SectionLabel>
+      <View className="flex-row gap-3">
+        {ROLES.map((r) => {
+          const active = role === r.key;
+
+          return (
+            <Pressable
+              key={r.key}
+              onPress={() => setRole(r.key)}
+              android_ripple={null}
+              className={cn(
+                "flex-1 items-center gap-2 rounded-3xl border p-4 active:opacity-80",
+                active ? "border-primary bg-primary" : "border-border bg-card",
+              )}
+            >
+              <View
                 className={cn(
-                  "flex-1 items-center rounded-xl border py-3",
-                  active
-                    ? "border-primary bg-primary"
-                    : "border-border bg-background",
+                  "h-11 w-11 items-center justify-center rounded-2xl",
+                  active ? "bg-white/15" : "bg-secondary",
                 )}
               >
+                {r.icon(active)}
+              </View>
+              <View className="items-center">
                 <Text
                   className={cn(
-                    "font-semibold",
+                    "text-[15px] font-bold",
                     active ? "text-primary-foreground" : "text-foreground",
                   )}
                 >
                   {r.label}
                 </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+                <Text
+                  className={cn(
+                    "text-[11px]",
+                    active ? "text-white/70" : "text-muted-foreground",
+                  )}
+                >
+                  {r.hint}
+                </Text>
+              </View>
+            </Pressable>
+          );
+        })}
       </View>
 
-      <View className="gap-3">
+      <SectionLabel>Your details</SectionLabel>
+      <View className="gap-3 rounded-3xl border border-border bg-card p-4">
         <Field label="Full name" error={fieldError("name")}>
-          <Input value={name} onChangeText={setName} placeholder="Juan Dela Cruz" />
+          <Input
+            value={name}
+            onChangeText={setName}
+            placeholder="Juan Dela Cruz"
+          />
         </Field>
         <Field label="Username" error={fieldError("username")}>
           <Input
@@ -134,7 +192,7 @@ export default function Register() {
             placeholder="you@example.com"
           />
         </Field>
-        <Field label="Phone" error={fieldError("phone")}>
+        <Field label="Mobile" error={fieldError("phone")}>
           <Input
             value={phone}
             onChangeText={setPhone}
@@ -142,55 +200,65 @@ export default function Register() {
             placeholder="09xxxxxxxxx"
           />
         </Field>
+      </View>
 
-        {role === "citizen" ? (
-          <Field label="PhilSys ID" error={fieldError("phil_sys_id")}>
-            <Input
-              value={philSysId}
-              onChangeText={setPhilSysId}
-              autoCapitalize="characters"
-              placeholder="PSN-0000-0000-0000"
-            />
-          </Field>
-        ) : null}
-
-        {role === "merchant" ? (
-          <View className="gap-2">
-            <Text variant="label">Assigned location</Text>
-            {locations.isLoading ? (
-              <View className="gap-2">
-                {[0, 1, 2].map((i) => (
-                  <Skeleton key={i} className="h-14 w-full rounded-xl" />
-                ))}
-              </View>
-            ) : (
-              locations.data?.map((loc) => {
+      {role === "merchant" ? (
+        <>
+          <SectionLabel>Assigned store</SectionLabel>
+          {locations.isLoading ? (
+            <Skeleton className="h-40 w-full rounded-3xl" />
+          ) : (
+            <View className="overflow-hidden rounded-3xl border border-border bg-card">
+              {(locations.data ?? []).map((loc, index, all) => {
                 const active = locationId === loc.id;
+
                 return (
-                  <Pressable key={loc.id} onPress={() => setLocationId(loc.id)}>
-                    <Card
+                  <Pressable
+                    key={loc.id}
+                    onPress={() => setLocationId(loc.id)}
+                    android_ripple={null}
+                    className={cn(
+                      "flex-row items-center gap-3 px-4 py-3.5 active:opacity-70",
+                      index !== all.length - 1 && "border-b border-border",
+                      active && "bg-secondary",
+                    )}
+                  >
+                    <View
                       className={cn(
-                        "p-3",
-                        active && "border-primary bg-secondary",
+                        "h-5 w-5 items-center justify-center rounded-full border-2",
+                        active ? "border-primary" : "border-border",
                       )}
                     >
-                      <Text variant="label">{loc.name}</Text>
-                      <Text variant="caption">
-                        {loc.type === "kadiwa_store" ? "Kadiwa store" : "Gas station"}
+                      {active ? (
+                        <View className="h-2.5 w-2.5 rounded-full bg-primary" />
+                      ) : null}
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-[15px] font-semibold text-foreground">
+                        {loc.name}
                       </Text>
-                    </Card>
+                      <Text className="text-[12px] text-muted-foreground">
+                        {loc.type === "kadiwa_store"
+                          ? "Kadiwa store"
+                          : "Gas station"}
+                        {loc.barangay ? ` · ${loc.barangay}` : ""}
+                      </Text>
+                    </View>
                   </Pressable>
                 );
-              })
-            )}
-            {fieldError("location_id") ? (
-              <Text variant="caption" className="text-destructive">
-                {fieldError("location_id")}
-              </Text>
-            ) : null}
-          </View>
-        ) : null}
+              })}
+            </View>
+          )}
+          {fieldError("location_id") ? (
+            <Text className="text-[13px] text-destructive">
+              {fieldError("location_id")}
+            </Text>
+          ) : null}
+        </>
+      ) : null}
 
+      <SectionLabel>Password</SectionLabel>
+      <View className="gap-3 rounded-3xl border border-border bg-card p-4">
         <Field label="Password" error={fieldError("password")}>
           <Input
             value={password}
@@ -199,7 +267,10 @@ export default function Register() {
             placeholder="At least 8 characters"
           />
         </Field>
-        <Field label="Confirm password">
+        <Field
+          label="Confirm password"
+          error={mismatch ? "Passwords do not match." : undefined}
+        >
           <Input
             value={confirm}
             onChangeText={setConfirm}
@@ -207,12 +278,31 @@ export default function Register() {
             placeholder="Re-enter your password"
           />
         </Field>
-
-        {error ? <Text className="text-destructive">{error}</Text> : null}
-        <Button label="Create account" onPress={onSubmit} loading={loading} />
       </View>
 
-      <View className="items-center py-2">
+      {error ? (
+        <View className="rounded-3xl p-4" style={{ backgroundColor: "#fce8ea" }}>
+          <Text className="text-[13px] font-semibold text-destructive">
+            {error}
+          </Text>
+        </View>
+      ) : null}
+
+      <Button
+        label="Create account"
+        onPress={onSubmit}
+        loading={loading}
+        disabled={
+          !name.trim() ||
+          !email.trim() ||
+          !password ||
+          !confirm ||
+          mismatch ||
+          (role === "merchant" && locationId === null)
+        }
+      />
+
+      <View className="items-center py-1">
         <TextLink href="/(auth)/login">I already have an account</TextLink>
       </View>
     </Screen>

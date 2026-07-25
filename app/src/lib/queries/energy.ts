@@ -7,6 +7,7 @@ import {
   listGridStatus,
   listInterruptions,
   recordGridStatus,
+  updateInterruption,
   type InterruptionFilters,
 } from "@/lib/api/energy";
 import { qk } from "@/lib/queries/keys";
@@ -42,6 +43,27 @@ export function useCreateInterruption() {
       qc.invalidateQueries({ queryKey: qk.outageMap });
       qc.invalidateQueries({ queryKey: qk.locations });
     },
+  });
+}
+
+function useEnergyInvalidation() {
+  const qc = useQueryClient();
+
+  return () => {
+    qc.invalidateQueries({ queryKey: qk.interruptions });
+    qc.invalidateQueries({ queryKey: qk.outageMap });
+    qc.invalidateQueries({ queryKey: qk.locations });
+  };
+}
+
+export function useUpdateInterruption() {
+  const invalidate = useEnergyInvalidation();
+  return useMutation({
+    mutationFn: (args: {
+      id: number;
+      body: Parameters<typeof updateInterruption>[1];
+    }) => updateInterruption(args.id, args.body),
+    onSuccess: invalidate,
   });
 }
 

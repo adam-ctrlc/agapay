@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, TextInput, View } from "react-native";
+import { TextInput, View } from "react-native";
 
 import { ApiError } from "@/lib/api/client";
 import type { AnnouncementCategory } from "@/lib/api/announcements";
@@ -7,18 +7,18 @@ import {
   useAnnouncements,
   useCreateAnnouncement,
 } from "@/lib/queries/announcements";
-import { cn } from "@/lib/utils";
 import { PH_COLORS } from "@/lib/theme";
 import { Screen } from "@/components/ui/screen";
 import { Text } from "@/components/ui/text";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDialog } from "@/components/ui/dialog";
+import { ChipRow, type SegmentedOption } from "@/components/ui/segmented";
+import { SectionLabel } from "@/components/ui/list-group";
 import { AnnouncementFeed } from "@/components/announcement-feed";
 
-const CATEGORIES: { key: AnnouncementCategory; label: string }[] = [
+const CATEGORIES: SegmentedOption<AnnouncementCategory>[] = [
   { key: "general", label: "News" },
   { key: "relief", label: "Relief" },
   { key: "advisory", label: "Advisory" },
@@ -62,46 +62,26 @@ export function AnnouncementsAdmin() {
 
   return (
     <Screen
-      edges={["top"]}
       refreshing={announcements.isRefetching}
       onRefresh={() => announcements.refetch()}
     >
-      <View className="gap-0.5">
-        <Text variant="title">Announcements</Text>
-        <Text variant="subtitle">Post updates for citizens to see.</Text>
+      <View className="gap-0.5 pt-1">
+        <Text className="text-[28px] font-bold leading-tight text-foreground">
+          Alerts
+        </Text>
+        <Text className="text-[13px] text-muted-foreground">
+          Post updates for citizens to see.
+        </Text>
       </View>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Post an announcement</CardTitle>
-        </CardHeader>
+      <SectionLabel>New announcement</SectionLabel>
+      <View className="rounded-3xl border border-border bg-card p-4">
         <View className="gap-3">
-          <View className="flex-row flex-wrap gap-2">
-            {CATEGORIES.map((c) => {
-              const active = category === c.key;
-              return (
-                <Pressable
-                  key={c.key}
-                  onPress={() => setCategory(c.key)}
-                  className={cn(
-                    "rounded-full px-3 py-1.5",
-                    active ? "bg-primary" : "bg-muted",
-                  )}
-                >
-                  <Text
-                    className={cn(
-                      "text-sm font-medium",
-                      active
-                        ? "text-primary-foreground"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    {c.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <ChipRow
+            value={category}
+            onChange={(next) => setCategory(next)}
+            options={CATEGORIES}
+          />
           <Field label="Title">
             <Input
               value={title}
@@ -117,18 +97,19 @@ export function AnnouncementsAdmin() {
               textAlignVertical="top"
               placeholder="Write the details citizens should know..."
               placeholderTextColor={PH_COLORS.mutedForeground}
-              className="min-h-[104px] rounded-xl border border-input bg-background p-3 text-base text-foreground"
+              className="min-h-[104px] rounded-2xl border border-input bg-background p-3 text-base text-foreground"
             />
           </Field>
           <Button
             label="Post announcement"
             loading={create.isPending}
+            disabled={!title.trim() || !body.trim()}
             onPress={post}
           />
         </View>
-      </Card>
+      </View>
 
-      <Text variant="heading">Posted</Text>
+      <SectionLabel>Posted</SectionLabel>
       <AnnouncementFeed manage />
     </Screen>
   );

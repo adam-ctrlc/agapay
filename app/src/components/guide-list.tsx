@@ -8,6 +8,7 @@ import { useGuides } from "@/lib/queries/guides";
 import { cn } from "@/lib/utils";
 import { PH_COLORS } from "@/lib/theme";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Text } from "@/components/ui/text";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -104,9 +105,13 @@ export function GuideList() {
       ) : query.isError ? (
         <Text className="text-destructive">Couldn&apos;t load guides.</Text>
       ) : items.length === 0 ? (
-        <Card>
-          <Text variant="caption">No guides match your search.</Text>
-        </Card>
+        <EmptyState
+          icon={MagnifyingGlass}
+          title="No guides found"
+          description="Nothing matches that search. Try a shorter word, or pick a different category."
+          tint={PH_COLORS.white}
+          color={PH_COLORS.mutedForeground}
+        />
       ) : (
         <View className="gap-3">
           {items.map((guide) => (

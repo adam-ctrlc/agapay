@@ -75,4 +75,9 @@ final class IncidentReport extends Model
     {
         return $this->hasMany(Referral::class);
     }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(IncidentReportComment::class);
+    }
 }
