@@ -125,7 +125,7 @@ export default function MerchantOffline() {
         setNotice(null);
         return;
       case "invalid_signature":
-        setError("Invalid signature. This voucher was not issued by AyudaLock.");
+        setError("Invalid signature. This voucher was not issued by Agapay.");
         setNotice(null);
         return;
       case "malformed":

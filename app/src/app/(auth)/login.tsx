@@ -41,7 +41,7 @@ export default function Login() {
       <View className="mt-8 items-center gap-3">
         <LogoTile size={84} radius={26} mark={56} />
         <View className="items-center gap-0.5">
-          <Text variant="title">AyudaLock</Text>
+          <Text variant="title">Agapay</Text>
           <Text variant="subtitle" className="text-center">
             The Last-Mile Relief Engine
           </Text>
@@ -85,7 +85,7 @@ export default function Login() {
         />
 
         <View className="flex-row items-center justify-center gap-1">
-          <Text variant="caption">New to AyudaLock?</Text>
+          <Text variant="caption">New to Agapay?</Text>
           <TextLink href="/(auth)/register">Create an account</TextLink>
         </View>
       </View>

@@ -11,7 +11,7 @@ export default function Root({ children }: PropsWithChildren) {
           name="viewport"
           content="width=device-width, initial-scale=1, shrink-to-fit=no"
         />
-        <title>AyudaLock</title>
+        <title>Agapay</title>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <ScrollViewStyleReset />
       </head>

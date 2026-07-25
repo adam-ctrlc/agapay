@@ -1,6 +1,6 @@
-# AyudaLock API, The Last-Mile Relief Engine
+# Agapay API, The Last-Mile Relief Engine
 
-Laravel (API-only) backend for AyudaLock: a digital bridge between national relief
+Laravel (API-only) backend for Agapay: a digital bridge between national relief
 programs (DSWD Walang Gutom Food Stamp, Kadiwa ng Pangulo, LTFRB fuel subsidy) and
 eligible citizens. It removes leakage (non-eligible hoarding), wasted transport fares
 (citizens travel only when goods are guaranteed), and cash-handling corruption by

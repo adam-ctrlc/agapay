@@ -1,8 +1,22 @@
 {
   "expo": {
-    "scheme": "ayudalock",
+    "name": "Agapay",
+    "slug": "agapay",
+    "version": "1.0.0",
+    "scheme": "agapay",
     "userInterfaceStyle": "automatic",
     "orientation": "default",
+    "android": {
+      "package": "com.agapay.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0038a8"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "ios": {
+      "bundleIdentifier": "com.agapay.app",
+      "supportsTablet": true
+    },
     "web": {
       "output": "static"
     },
@@ -13,27 +27,25 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow AyudaLock to scan voucher QR codes."
+          "cameraPermission": "Allow Agapay to scan voucher QR codes."
         }
       ],
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow AyudaLock to attach your location to an incident report so responders know where to go.",
-          "locationWhenInUsePermission": "Allow AyudaLock to attach your location to an incident report so responders know where to go.",
+          "locationAlwaysAndWhenInUsePermission": "Allow Agapay to attach your location to an incident report so responders know where to go.",
+          "locationWhenInUsePermission": "Allow Agapay to attach your location to an incident report so responders know where to go.",
           "isAndroidBackgroundLocationEnabled": false
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow AyudaLock to attach a photo to your incident report.",
-          "cameraPermission": "Allow AyudaLock to take a photo for your incident report."
+          "photosPermission": "Allow Agapay to attach a photo to your incident report.",
+          "cameraPermission": "Allow Agapay to take a photo for your incident report."
         }
       ],
       "@react-native-community/datetimepicker"
-    ],
-    "name": "app",
-    "slug": "app"
+    ]
   }
 }

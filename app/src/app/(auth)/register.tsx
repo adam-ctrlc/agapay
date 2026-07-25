@@ -114,7 +114,7 @@ export default function Register() {
             Create account
           </Text>
           <Text className="text-center text-[13px] text-muted-foreground">
-            Join AyudaLock to access relief programs.
+            Join Agapay to access relief programs.
           </Text>
         </View>
       </View>

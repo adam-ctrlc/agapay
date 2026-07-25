@@ -3,9 +3,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Opening AyudaLock…</title>
+    <title>Opening Agapay…</title>
     <script>
-        // Bounce the visitor into the AyudaLock app.
+        // Bounce the visitor into the Agapay app.
         window.location.replace("{{ $deepLink }}");
     </script>
     <style>
@@ -22,9 +22,9 @@
 <body>
     <div class="box">
         <div class="logo">AL</div>
-        <h2>Opening AyudaLock…</h2>
+        <h2>Opening Agapay…</h2>
         <p>If the app does not open automatically, tap below.</p>
-        <a href="{{ $deepLink }}">Open the AyudaLock app</a>
+        <a href="{{ $deepLink }}">Open the Agapay app</a>
     </div>
 </body>
 </html>

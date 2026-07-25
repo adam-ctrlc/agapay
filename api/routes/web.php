@@ -9,6 +9,6 @@ Route::get('/', function () {
 
 Route::get('/a/{announcement}', function (Announcement $announcement) {
     return view('announcement', [
-        'deepLink' => 'ayudalock://announcements',
+        'deepLink' => 'agapay://announcements',
     ]);
 })->name('announcements.show');

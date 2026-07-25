@@ -1,6 +1,6 @@
-# AyudaLock: The Last-Mile Relief Engine
+# Agapay: The Last-Mile Relief Engine
 
-AyudaLock is a digital bridge between national relief programs (DSWD Walang Gutom Food
+Agapay is a digital bridge between national relief programs (DSWD Walang Gutom Food
 Stamp, Kadiwa ng Pangulo, LTFRB fuel subsidy) and the citizens who need them. It removes
 leakage (non-eligible hoarding), wasted transport fares (citizens travel only when goods
 are guaranteed), and cash-handling corruption by digitizing verification, allocation, and
