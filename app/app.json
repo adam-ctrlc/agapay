@@ -11,7 +11,12 @@
       "adaptiveIcon": {
         "backgroundColor": "#0038a8"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "ios": {
       "bundleIdentifier": "com.agapay.app",
@@ -27,7 +32,8 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Agapay to scan voucher QR codes."
+          "cameraPermission": "Allow Agapay to scan voucher QR codes.",
+          "recordAudioAndroid": false
         }
       ],
       [
@@ -46,6 +52,13 @@
         }
       ],
       "@react-native-community/datetimepicker"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e87d69c5-1a21-46c1-95fa-7f94defebafa"
+      }
+    },
+    "owner": "peregrine.adrift"
   }
 }
